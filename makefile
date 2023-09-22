@@ -8,7 +8,16 @@ all: LeMaraicher CreationBD
 
 LeMaraicher:	moc_windowclient.o windowclient.o mainclient.o LibSockets.o
 		echo compilation de LeMaraicher
-		g++ -Wno-unused-parameter -o LeMaraicher mainclient.o windowclient.o moc_windowclient.o LibSockets.o  /usr/lib64/libQt5Widgets.so /usr/lib64/libQt5Gui.so /usr/lib64/libQt5Core.so /usr/lib64/libGL.so -lpthread
+		g++ -Wno-unused-parameter -o LeMaraicher mainclient.o windowclient.o moc_windowclient.o LibSockets.o /usr/lib64/libQt5Widgets.so /usr/lib64/libQt5Gui.so /usr/lib64/libQt5Core.so /usr/lib64/libGL.so -lpthread
+
+ClientTest:	LibSockets.o client_test.o
+		echo compilation du ClientTest
+		g++ -Wno-unused-parameter -o ClientTest LibSockets.o client_test.o -lpthread
+
+ServeurTest:	LibSockets.o serveur_test.o
+		echo compilation du ServeurTest
+		g++ -Wno-unused-parameter -o ServeurTest LibSockets.o serveur_test.o -lpthread
+	
 
 mainclient.o:	ClientQt/mainclient.cpp
 				echo compilation de mainclient
@@ -25,6 +34,14 @@ moc_windowclient.o: ClientQt/moc_windowclient.cpp
 LibSockets.o: lib/LibSockets.cpp
 				echo compilation de LibSockets
 				$(COMP) lib/LibSockets.cpp -c
+
+serveur_test.o: lib/serveur_test.c
+				echo compilation de serveur_test
+				$(COMP) lib/serveur_test.c -c
+
+client_test.o: lib/client_test.c
+				echo compilation de client_test
+				$(COMP) lib/client_test.c -c
 
 CreationBD:	BD_Maraicher/CreationBD.cpp
 			echo compilation de CreationBD

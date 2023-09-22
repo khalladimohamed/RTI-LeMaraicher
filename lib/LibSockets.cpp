@@ -17,6 +17,7 @@ int ServerSocket(int port)
 	int sServeur;
 	char portChar[6];
 	snprintf(portChar, sizeof(portChar), "%d", port);
+	printf("port : %s\n", portChar);
 	printf("pid = %d\n",getpid());
 	
 	// Creation de la socket
@@ -34,7 +35,9 @@ int ServerSocket(int port)
 	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_flags = AI_PASSIVE | AI_NUMERICSERV; // pour une connexion passive
-	if (getaddrinfo(NULL,portChar, &hints, &results) != 0)
+	
+	//l'ip adresse doit etre null pour prendre l'adresse de la machine local
+	if (getaddrinfo(NULL, portChar, &hints, &results) != 0) 
 	{
 		close(sServeur);
 		exit(1);
@@ -84,9 +87,11 @@ int Accept(int sEcoute, char* ipClient)
 }
 
 
-int ClientSocket(const char* ipServeur, int portServeur) 
+int ClientSocket(char* ipServeur, int portServeur) 
 {
     int clientSocket;
+    char portServeurChar[6];
+	snprintf(portServeurChar, sizeof(portServeurChar), "%d", portServeur);
     
     // Création de la structure d'informations sur l'hôte
     struct addrinfo hints;
@@ -96,7 +101,7 @@ int ClientSocket(const char* ipServeur, int portServeur)
 
     // Résolution de l'adresse IP du serveur
     struct addrinfo* results;
-    if (getaddrinfo(ipServeur, NULL, &hints, &results) != 0) {
+    if (getaddrinfo(ipServeur, portServeurChar, &hints, &results) != 0) {
         perror("Erreur de getaddrinfo()");
         exit(1);
     }
