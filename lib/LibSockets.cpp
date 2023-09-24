@@ -17,6 +17,7 @@ int ServerSocket(int port)
 	int sServeur;
 	char portChar[6];
 	snprintf(portChar, sizeof(portChar), "%d", port);
+	
 	printf("port : %s\n", portChar);
 	printf("pid = %d\n",getpid());
 	
