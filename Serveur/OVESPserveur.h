@@ -11,7 +11,6 @@ bool  OVESP_Caddie();
 bool  OVESP_Cancel(int idArticle);
 bool  OVESP_Cancel_All();
 bool  OVESP_Confirmer();
-//int   OVESP_Operation(char op,int a,int b);
 void  OVESP_Close();
 
 #endif

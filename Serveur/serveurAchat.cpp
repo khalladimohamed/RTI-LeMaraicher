@@ -17,7 +17,6 @@ int sEcoute;
 
 
 
-
 // Gestion du pool de threads
 #define NB_THREADS_POOL 2
 #define TAILLE_FILE_ATTENTE 20
@@ -25,7 +24,6 @@ int socketsAcceptees[TAILLE_FILE_ATTENTE];
 int indiceEcriture = 0, indiceLecture = 0;
 pthread_mutex_t mutexSocketsAcceptees;
 pthread_cond_t condSocketsAcceptees;
-
 
 
 
