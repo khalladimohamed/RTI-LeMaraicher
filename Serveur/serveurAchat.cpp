@@ -9,12 +9,10 @@
 #include "../lib/LibSockets.h"
 
 
-
 void HandlerSIGINT(int s);
 void TraitementConnexion(int sService);
 void* FctThreadClient(void* p);
 int sEcoute;
-
 
 
 // Gestion du pool de threads
@@ -24,7 +22,6 @@ int socketsAcceptees[TAILLE_FILE_ATTENTE];
 int indiceEcriture = 0, indiceLecture = 0;
 pthread_mutex_t mutexSocketsAcceptees;
 pthread_cond_t condSocketsAcceptees;
-
 
 
 int main(int argc,char* argv[])
@@ -104,7 +101,6 @@ int main(int argc,char* argv[])
 }
 
 
-
 void* FctThreadClient(void* p)
 {
     int sService;
@@ -133,7 +129,6 @@ void* FctThreadClient(void* p)
 }
 
 
-
 void HandlerSIGINT(int s)
 {
     printf("\nArret du serveur.\n");
@@ -148,10 +143,9 @@ void HandlerSIGINT(int s)
 }
 
 
-
 void TraitementConnexion(int sService)
 {
-    char requete[200], reponse[200];
+    char requete[200], reponse[1024];
     int nbLus, nbEcrits;
     bool onContinue = true;
     

@@ -7,15 +7,13 @@
 #include "OVESPserveur.h"
 
 
-//***** BD **********************************************************
-MYSQL* mysql_conn; // Connexion MySQL
-MYSQL_RES* result; // Résultat de la requête
-MYSQL_ROW row;     // Ligne de résultat
 
+//***** Mutex BD *****************************************************
 pthread_mutex_t mysqlMutex = PTHREAD_MUTEX_INITIALIZER;
 
 // Verrouillez le mutex pour protéger l'accès à la base de données MySQL
 //pthread_mutex_lock(&mysqlMutex);
+
 // Déverrouillez le mutex après avoir terminé les opérations sur la base de données
 //pthread_mutex_unlock(&mysqlMutex);
 
@@ -29,9 +27,24 @@ void retire(int socket);
 pthread_mutex_t mutexClients = PTHREAD_MUTEX_INITIALIZER;
 
 
+//***** CADDIE ******************************************************
+typedef struct
+{
+    int idArticle;
+    char intitule[20];
+    int quantite;
+    float prix;
+} CADDIE;
+
+
+CADDIE caddie[MAX_TAILLE_CADDIE];
+int nombreArticlesCaddie = 0;
+float montantTotalCaddie = 0.0;
+//peut etre il faut utiliser des mutex ?
+
 
 //***** Parsing de la requete et creation de la reponse *************
-bool OVESP(char* requete, char* reponse,int socket)
+bool OVESP(char* requete, char* reponse, int socket)
 {
 
 	// ***** Récupération nom de la requete *****************
@@ -62,27 +75,14 @@ bool OVESP(char* requete, char* reponse,int socket)
 				return false;
 			}
 		}
-
-		//A completer / Modifier 
-		//Commande:
-		//« Login » 
-
-		//Requête:
-		//Login,
-		//password,
-		//nouveau
-		//client ou pas
-
-		//Réponse:
-		//Oui ou non,
-		//message (+
-		//idClient) ou raison
 	}
 
 	// ***** LOGOUT *****************************************
 	if (strcmp(ptr,"LOGOUT") == 0)
 	{
 		printf("\t[THREAD %p] LOGOUT\n",pthread_self());
+		if(nombreArticlesCaddie != 0)
+			OVESP_Cancel_All();
 		retire(socket);
 		sprintf(reponse,"LOGOUT#ok");
 		return false;
@@ -91,18 +91,7 @@ bool OVESP(char* requete, char* reponse,int socket)
 	// ***** CONSULT ****************************************
 	if (strcmp(ptr,"CONSULT") == 0)
 	{
-		//A completer
-
-		//Commande:
-		//« Consult » 
-
-		//Requête:
-		//idArticle 
-
-		//Réponse:
-		//idArticle ou -1,
-		//intitule, stock,
-		//prix, image
+		
 
 
 	}
@@ -110,17 +99,7 @@ bool OVESP(char* requete, char* reponse,int socket)
 	// ***** ACHAT ******************************************
 	if (strcmp(ptr,"ACHAT") == 0)
 	{
-		//A completer
-		//Commande:
-		//« Achat » 
-
-		//Requête :
-		//idArticle,
-		//quantité
-
-		//Réponse:
-		//idArticle ou -1,
-		//quantité ou 0, prix
+		
 
 		
 	}
@@ -128,103 +107,40 @@ bool OVESP(char* requete, char* reponse,int socket)
 	// ***** CADDIE *****************************************
 	if (strcmp(ptr,"CADDIE") == 0)
 	{
-		//A completer
-		//Commande:
-        //« Caddie » 
-
-		//Requête :
-		//null
-
-		//Réponse:
-		//Contenu du
-		//panier : (idArticle,
-		//intitulé, quantité,
-		//prix) × nombre
-		//d’articles du panier
-
-
-
+		
 		
 	}
 
 	// ***** CANCEL *****************************************
 	if (strcmp(ptr,"CANCEL") == 0)
 	{
-		//A completer
-		//Commande:
-		//« Cancel » 
-
-		//Requête :
-		//idArticle 
-
-		//Réponse:
-		//Oui ou non 
-
-
 		
+
+
 	}
 
 	// ***** CANCEL_ALL *************************************
 	if (strcmp(ptr,"CANCEL_ALL") == 0)
 	{
-		//A completer
-		//Commande:
-        //« Cancel All » 
+		
 
-		//Requête :
-		//null
-
-		//Réponse:
-		//null
 	
 	}
 
 	// ***** CONFIRMER **************************************
 	if (strcmp(ptr,"CONFIRMER") == 0)
 	{
-		//A completer
-		//Commande:
-		//« Confirmer » 
+		
 
-		//Requête :
-		//null 
-
-		//Réponse:
-		//Numéro de facture générée
 
 	}
 
-
-	
 	return true;
 }
 
 
-
-//***** Traitement des requetes *************************************
-/*bool OVESP_Login(const char* user,const char* password)
-{
-	
-	//A completer
-	//Actions / Explications
-	//Vérification de l’existence et du mot
-	//de passe du client / Création d’un
-	//nouveau client dans la table clients
-
-
-}*/
-
 bool OVESP_Login(const char* user, const char* password, const bool nvClient)
 {
-    // Ici, vous devez insérer le code pour vérifier l'existence du client
-    // dans la table "clients" et valider le mot de passe.
-    // Si le client existe et le mot de passe est correct, retournez true.
-    // Si le client n'existe pas et nvClient est vrai, créez un nouveau client dans la table "clients" et retournez true.
-    // Sinon, retournez false.
-
-    // Par exemple (à adapter à votre utilisation réelle de MySQL) :
-    // Remplacez "mysql_query" par la méthode que vous utilisez pour exécuter des requêtes MySQL.
-
     MYSQL* mysql_conn; // Connexion MySQL
 	MYSQL_RES* result; // Résultat de la requête
 	MYSQL_ROW row;     // Ligne de résultat
@@ -232,7 +148,7 @@ bool OVESP_Login(const char* user, const char* password, const bool nvClient)
     mysql_conn = mysql_init(NULL);
     
     // Établissez la connexion à la base de données MySQL.
-    if (mysql_real_connect(mysql_conn, "localhost", "username", "password", "database", 0, NULL, 0) == NULL)
+    if (mysql_real_connect(mysql_conn, "localhost","Student","PassStudent1_","PourStudent", 0, NULL, 0) == NULL)
     {
         fprintf(stderr, "Erreur de connexion MySQL : %s\n", mysql_error(mysql_conn));
         mysql_close(mysql_conn);
@@ -289,28 +205,9 @@ bool OVESP_Login(const char* user, const char* password, const bool nvClient)
     return false;
 }
 
-/*int OVESP_Consult(int idArticle)
+
+int OVESP_Consult(int idArticle, char* reponse)
 {
-
-	//A completer
-	//Actions / Explications
-	//Consultation d’un article en BD → si
-	//article non trouvé, retour -1 au client
-
-
-}*/
-
-int OVESP_Consult(int idArticle)
-{
-    // Ici, vous devez insérer le code pour consulter un article en BD
-    // en fonction de son ID (idArticle) et retourner les informations
-    // de l'article. Si l'article est trouvé, retournez l'ID de l'article,
-    // le nom, le stock, le prix et le chemin de l'image. Si l'article n'est
-    // pas trouvé, retournez -1.
-
-    // Par exemple (à adapter à votre utilisation réelle de MySQL) :
-    // Remplacez "mysql_query" par la méthode que vous utilisez pour exécuter des requêtes MySQL.
-
     MYSQL* mysql_conn; // Connexion MySQL
     MYSQL_RES* result; // Résultat de la requête
     MYSQL_ROW row;     // Ligne de résultat
@@ -318,7 +215,7 @@ int OVESP_Consult(int idArticle)
     mysql_conn = mysql_init(NULL);
 
     // Établissez la connexion à la base de données MySQL.
-    if (mysql_real_connect(mysql_conn, "localhost", "username", "password", "database", 0, NULL, 0) == NULL)
+    if (mysql_real_connect(mysql_conn, "localhost","Student","PassStudent1_","PourStudent", 0, NULL, 0) == NULL)
     {
         fprintf(stderr, "Erreur de connexion MySQL : %s\n", mysql_error(mysql_conn));
         mysql_close(mysql_conn);
@@ -357,10 +254,8 @@ int OVESP_Consult(int idArticle)
         mysql_free_result(result);
         mysql_close(mysql_conn);
 
-        // Vous pouvez utiliser ces valeurs pour construire la réponse.
-        // Par exemple, vous pouvez utiliser sprintf pour construire la réponse.
-        // Assurez-vous de libérer la mémoire appropriée pour la réponse.
-        // Exemple : sprintf(reponse, "CONSULT#%d#%s#%d#%.2f#%s", articleID, intitule, stock, prix, image);
+        
+        sprintf(reponse, "CONSULT#%d#%s#%d#%.2f#%s", articleID, intitule, stock, prix, image);
 
         return articleID;
     }
@@ -371,33 +266,9 @@ int OVESP_Consult(int idArticle)
     return -1;
 }
 
-/*int OVESP_Achat(int idAricle, int quantite)
+
+int OVESP_Achat(int idArticle, int quantite, char* reponse)
 {
-
-	//A completer
-	//Actions / Explications
-	//Si article non trouvé, retour -1. Si
-	//trouvé mais que stock insuffisant,
-	//retour d’une quantité 0 → Si ok, le
-	//stock est mis à jour en BD et le
-	//contenu du caddie est mémorisé au
-	//niveau du serveur → actuellement
-	//aucune action sur tables factures et
-	//ventes
-
-}*/
-
-int OVESP_Achat(int idArticle, int quantite)
-{
-    // Ici, vous devez insérer le code pour gérer l'achat d'un article.
-    // Vous devez vérifier si l'article existe et si la quantité est disponible en stock.
-    // Si l'article est trouvé et la quantité est suffisante, mettez à jour le stock,
-    // et retournez l'ID de l'article, la quantité achetée et le prix total.
-    // Si l'article n'est pas trouvé ou la quantité n'est pas suffisante, retournez -1.
-
-    // Par exemple (à adapter à votre utilisation réelle de MySQL) :
-    // Remplacez "mysql_query" par la méthode que vous utilisez pour exécuter des requêtes MySQL.
-
     MYSQL* mysql_conn; // Connexion MySQL
     MYSQL_RES* result; // Résultat de la requête
     MYSQL_ROW row;     // Ligne de résultat
@@ -405,7 +276,7 @@ int OVESP_Achat(int idArticle, int quantite)
     mysql_conn = mysql_init(NULL);
 
     // Établissez la connexion à la base de données MySQL.
-    if (mysql_real_connect(mysql_conn, "localhost", "username", "password", "database", 0, NULL, 0) == NULL)
+    if (mysql_real_connect(mysql_conn, "localhost","Student","PassStudent1_","PourStudent", 0, NULL, 0) == NULL)
     {
         fprintf(stderr, "Erreur de connexion MySQL : %s\n", mysql_error(mysql_conn));
         mysql_close(mysql_conn);
@@ -443,7 +314,6 @@ int OVESP_Achat(int idArticle, int quantite)
         if (stock >= quantite)
         {
             // Le stock est suffisant pour l'achat.
-            // Mettez à jour le stock dans la base de données.
             int nouveauStock = stock - quantite;
             snprintf(query, sizeof(query), "UPDATE articles SET stock=%d WHERE id=%d", nouveauStock, articleID);
             if (mysql_query(mysql_conn, query))
@@ -457,11 +327,20 @@ int OVESP_Achat(int idArticle, int quantite)
             mysql_free_result(result);
             mysql_close(mysql_conn);
 
-            // Retournez les informations de l'achat.
-            // Vous pouvez utiliser ces valeurs pour construire la réponse.
-            // Par exemple, vous pouvez utiliser sprintf pour construire la réponse.
-            // Assurez-vous de libérer la mémoire appropriée pour la réponse.
-            // Exemple : sprintf(reponse, "ACHAT#%d#%d#%.2f", articleID, quantite, quantite * prix);
+            // Ajoutez l'article au caddie
+        	if (nombreArticlesCaddie < MAX_TAILLE_CADDIE)
+        	{
+            	caddie[nombreArticlesCaddie].idArticle = articleID;
+            	strncpy(caddie[nombreArticlesCaddie].intitule, intitule, sizeof(caddie[nombreArticlesCaddie].intitule));
+            	caddie[nombreArticlesCaddie].quantite = quantite;
+            	caddie[nombreArticlesCaddie].prix = quantite * prix;
+            	nombreArticlesCaddie++;
+        	}
+
+        	// Mise à jour du montant total du caddie
+        	montantTotalCaddie += quantite * prix;
+
+            sprintf(reponse, "ACHAT#%d#%d#%.2f", articleID, quantite, quantite * prix);
 
             return articleID;
         }
@@ -473,26 +352,9 @@ int OVESP_Achat(int idArticle, int quantite)
     return -1;
 }
 
-/*bool OVESP_Caddie()
+
+bool OVESP_Caddie(char* reponse)
 {
-
-	//A completer
-	//Actions / Explications
-	//Retourne l’entièreté du contenu du
-	//caddie au client
-
-}*/
-
-bool OVESP_Caddie()
-{
-    // Ici, vous devez insérer le code pour récupérer le contenu du caddie
-    // du client actuellement connecté. Vous devez parcourir les articles
-    // dans le caddie, récupérer les informations nécessaires depuis la base
-    // de données et construire une réponse contenant ces informations.
-
-    // Par exemple (à adapter à votre utilisation réelle de MySQL) :
-    // Remplacez "mysql_query" par la méthode que vous utilisez pour exécuter des requêtes MySQL.
-
     MYSQL* mysql_conn; // Connexion MySQL
     MYSQL_RES* result; // Résultat de la requête
     MYSQL_ROW row;     // Ligne de résultat
@@ -500,7 +362,7 @@ bool OVESP_Caddie()
     mysql_conn = mysql_init(NULL);
 
     // Établissez la connexion à la base de données MySQL.
-    if (mysql_real_connect(mysql_conn, "localhost", "username", "password", "database", 0, NULL, 0) == NULL)
+    if (mysql_real_connect(mysql_conn, "localhost","Student","PassStudent1_","PourStudent", 0, NULL, 0) == NULL)
     {
         fprintf(stderr, "Erreur de connexion MySQL : %s\n", mysql_error(mysql_conn));
         mysql_close(mysql_conn);
@@ -526,17 +388,25 @@ bool OVESP_Caddie()
         return false;
     }
 
-    // Vous devez parcourir les résultats et construire la réponse.
-    // Par exemple, vous pouvez utiliser une boucle pour parcourir les lignes
-    // de résultat et ajouter les informations de chaque article au format de la réponse.
+    // Construisez la réponse en fonction des articles dans le caddie
+    char contenuDuCaddie[1024];
+    if (nombreArticlesCaddie > 0)
+    {
+        snprintf(contenuDuCaddie, sizeof(contenuDuCaddie), "CADDIE#");
+        for (int i = 0; i < nombreArticlesCaddie; i++)
+        {
+            char articleInfo[256];
+            snprintf(articleInfo, sizeof(articleInfo), "%d,%s,%d,%.2f;", caddie[i].idArticle, caddie[i].intitule, caddie[i].quantite, caddie[i].prix);
+            strncat(contenuDuCaddie, articleInfo, sizeof(contenuDuCaddie));
+        }
+    }
+    else
+    {
+        snprintf(contenuDuCaddie, sizeof(contenuDuCaddie), "CADDIE#Aucun article dans le caddie;");
+    }
 
-    // Assurez-vous de libérer la mémoire appropriée pour la réponse.
-
-    // Exemple de construction de la réponse :
-    // char reponse[1024];
-    // snprintf(reponse, sizeof(reponse), "CADDIE#%s", contenuDuCaddie);
-
-    // Vous devez également gérer le cas où le caddie est vide.
+    // Copiez le contenu du caddie dans la réponse
+    snprintf(reponse, sizeof(reponse), "%s", contenuDuCaddie);
 
     // Libérez la mémoire et fermez la connexion MySQL.
     mysql_free_result(result);
@@ -545,90 +415,119 @@ bool OVESP_Caddie()
     return true;
 }
 
-/*bool OVESP_Cancel(int idArticle)
-{
-
-	//A completer
-	//Actions / Explications
-	//Supprime un article du caddie et met à
-	//jour à la BD
-
-}*/
 
 bool OVESP_Cancel(int idArticle)
 {
-    // Ici, vous devez insérer le code pour annuler un article du caddie
-    // du client actuellement connecté. Vous devez supprimer l'article spécifié
-    // du caddie et mettre à jour la base de données si nécessaire.
-
-    // Par exemple (à adapter à votre utilisation réelle de MySQL) :
-    // Remplacez "mysql_query" par la méthode que vous utilisez pour exécuter des requêtes MySQL.
+    MYSQL* mysql_conn; // Connexion MySQL
+    MYSQL_RES* result; // Résultat de la requête
+    MYSQL_ROW row;     // Ligne de résultat
 
     MYSQL* mysql_conn; // Connexion MySQL
 
     mysql_conn = mysql_init(NULL);
 
     // Établissez la connexion à la base de données MySQL.
-    if (mysql_real_connect(mysql_conn, "localhost", "username", "password", "database", 0, NULL, 0) == NULL)
+    if (mysql_real_connect(mysql_conn, "localhost","Student","PassStudent1_","PourStudent", 0, NULL, 0) == NULL)
     {
         fprintf(stderr, "Erreur de connexion MySQL : %s\n", mysql_error(mysql_conn));
         mysql_close(mysql_conn);
         return false;
     }
 
-    // Vous devez construire la requête SQL pour supprimer l'article spécifié du caddie.
-    // Assurez-vous également de mettre à jour la base de données pour refléter cette modification.
+    
+    // 1. Recherchez l'article dans le caddie en fonction de son ID.
+    int indiceArticleDansCaddie = -1;
+    for (int i = 0; i < nombreArticlesCaddie; i++)
+    {
+        if (caddie[i].idArticle == idArticle)
+        {
+            indiceArticleDansCaddie = i;
+            break;
+        }
+    }
 
-    // Par exemple :
-    // char query[256];
-    // snprintf(query, sizeof(query), "DELETE FROM caddie WHERE idClient=%d AND idArticle=%d", idClient, idArticle);
-    // Si vous utilisez une transaction, assurez-vous de valider la transaction après cette opération.
+    char query[256];
 
+    if (indiceArticleDansCaddie != -1)
+    {
+        // 2. Mettez à jour la base de données avec la nouvelle quantité de l'article.
+        int nouvelleQuantite = caddie[indiceArticleDansCaddie].quantite;
+        snprintf(query, sizeof(query), "UPDATE articles SET stock = stock + %d WHERE id = %d", nouvelleQuantite, idArticle);
+
+        if (mysql_query(mysql_conn, query))
+        {
+            fprintf(stderr, "Erreur lors de la mise à jour du stock dans la base de données : %s\n", mysql_error(mysql_conn));
+            mysql_close(mysql_conn);
+            return false;
+        }
+
+        // 3. Supprimez l'article du caddie.
+        for (int i = indiceArticleDansCaddie; i < nombreArticlesCaddie - 1; i++)
+        {
+            caddie[i] = caddie[i + 1];
+        }
+
+        nombreArticlesCaddie--;
+
+        // 4. Créez une réponse pour indiquer que l'annulation a réussi.
+        snprintf(query, sizeof(query), "CANCEL#ok");
+        sprintf(reponse, "%s", query);
+    }
+    else
+    {
+        // L'article n'a pas été trouvé dans le caddie.
+        snprintf(query, sizeof(query), "CANCEL#ko#L'article n'a pas été trouvé dans le caddie");
+        sprintf(reponse, "%s", query);
+    }
+    
     // Libérez la mémoire et fermez la connexion MySQL.
     mysql_close(mysql_conn);
 
     return true;
 }
 
-
-/*bool OVESP_Cancel_All()
-{
-
-	//A completer
-	//Actions / Explications
-	//Supprime tous les articles du caddie et
-	//met à jour la BD
-
-}*/
 
 bool OVESP_Cancel_All()
 {
-    // Ici, vous devez insérer le code pour annuler tous les articles du caddie
-    // du client actuellement connecté. Vous devez supprimer tous les articles
-    // du caddie et mettre à jour la base de données si nécessaire.
-
-    // Par exemple (à adapter à votre utilisation réelle de MySQL) :
-    // Remplacez "mysql_query" par la méthode que vous utilisez pour exécuter des requêtes MySQL.
-
     MYSQL* mysql_conn; // Connexion MySQL
+    MYSQL_RES* result; // Résultat de la requête
+    MYSQL_ROW row;     // Ligne de résultat
 
     mysql_conn = mysql_init(NULL);
 
     // Établissez la connexion à la base de données MySQL.
-    if (mysql_real_connect(mysql_conn, "localhost", "username", "password", "database", 0, NULL, 0) == NULL)
+    if (mysql_real_connect(mysql_conn, "localhost", "Student", "PassStudent1_", "PourStudent", 0, NULL, 0) == NULL)
     {
         fprintf(stderr, "Erreur de connexion MySQL : %s\n", mysql_error(mysql_conn));
         mysql_close(mysql_conn);
         return false;
     }
 
-    // Vous devez construire la requête SQL pour supprimer tous les articles du caddie du client.
-    // Assurez-vous également de mettre à jour la base de données pour refléter cette modification.
+    char query[256];
 
-    // Par exemple :
-    // char query[256];
-    // snprintf(query, sizeof(query), "DELETE FROM caddie WHERE idClient=%d", idClient);
-    // Si vous utilisez une transaction, assurez-vous de valider la transaction après cette opération.
+    // Parcourez le caddie et mettez à jour les stocks dans la base de données.
+    for (int i = 0; i < nombreArticlesCaddie; i++)
+    {
+        int idArticle = caddie[i].idArticle;
+        int quantite = caddie[i].quantite;
+
+        // Mettez à jour le stock dans la base de données.
+        snprintf(query, sizeof(query), "UPDATE articles SET stock = stock + %d WHERE id = %d", quantite, idArticle);
+
+        if (mysql_query(mysql_conn, query))
+        {
+            fprintf(stderr, "Erreur lors de la mise à jour du stock dans la base de données : %s\n", mysql_error(mysql_conn));
+            mysql_close(mysql_conn);
+            return false;
+        }
+    }
+
+    // Réinitialisez le caddie en le vidant.
+    nombreArticlesCaddie = 0;
+
+    // Créez une réponse pour indiquer que l'annulation de tous les articles du caddie a réussi.
+    snprintf(query, sizeof(query), "CANCEL_ALL#ok");
+    sprintf(reponse, "%s", query);
 
     // Libérez la mémoire et fermez la connexion MySQL.
     mysql_close(mysql_conn);
@@ -636,72 +535,114 @@ bool OVESP_Cancel_All()
     return true;
 }
 
-/*bool OVESP_Confirmer()
+int OVESP_Confirmer(char* reponse)
 {
-
-	//A completer
-	//Actions / Explications
-	//Création d’une facture et BD et ajout
-	//des éléments du caddie dans la BD
-
-}*/
-
-bool OVESP_Confirmer()
-{
-    // Ici, vous devez insérer le code pour confirmer la commande et créer une facture.
-    // Vous devez ajouter les éléments du caddie à la table des ventes, générer un numéro
-    // de facture, calculer le montant total, créer la facture dans la base de données, etc.
-
-    // Par exemple (à adapter à votre utilisation réelle de MySQL) :
-    // Remplacez "mysql_query" par la méthode que vous utilisez pour exécuter des requêtes MySQL.
-
     MYSQL* mysql_conn; // Connexion MySQL
+    MYSQL_RES* result; // Résultat de la requête
+    MYSQL_ROW row;     // Ligne de résultat
 
     mysql_conn = mysql_init(NULL);
 
     // Établissez la connexion à la base de données MySQL.
-    if (mysql_real_connect(mysql_conn, "localhost", "username", "password", "database", 0, NULL, 0) == NULL)
+    if (mysql_real_connect(mysql_conn, "localhost", "Student", "PassStudent1_", "PourStudent", 0, NULL, 0) == NULL)
     {
         fprintf(stderr, "Erreur de connexion MySQL : %s\n", mysql_error(mysql_conn));
         mysql_close(mysql_conn);
-        return false;
+        return -1;
     }
 
-    // Vous devez construire les requêtes SQL nécessaires pour créer la facture et les ventes associées.
-    // Assurez-vous de gérer correctement les transactions et de mettre à jour la base de données.
+    char query[256];
 
-    // Par exemple :
-    // char query[256];
-    // // Insérer les éléments du caddie dans la table des ventes (ventes)
-    // snprintf(query, sizeof(query), "INSERT INTO ventes (idFacture, idArticle, quantite) SELECT F.idFacture, C.idArticle, C.quantite FROM factures F JOIN caddie C ON F.idClient = C.idClient WHERE F.idClient = %d", idClient);
-    // if (mysql_query(mysql_conn, query))
-    // {
-    //     fprintf(stderr, "Erreur lors de l'exécution de la requête pour insérer les ventes : %s\n", mysql_error(mysql_conn));
-    //     // En cas d'erreur, annulez la transaction si nécessaire.
-    //     // ...
-    //     mysql_close(mysql_conn);
-    //     return false;
-    // }
+    // Vérifiez si la table facture est vide.
+    snprintf(query, sizeof(query), "SELECT COUNT(*) FROM facture");
+    if (mysql_query(mysql_conn, query))
+    {
+        fprintf(stderr, "Erreur lors de la vérification de la table facture : %s\n", mysql_error(mysql_conn));
+        mysql_close(mysql_conn);
+        return -1;
+    }
 
-    // // Calculer le montant total
-    // snprintf(query, sizeof(query), "SELECT SUM(A.prix * C.quantite) FROM articles A JOIN caddie C ON A.id = C.idArticle WHERE C.idClient = %d", idClient);
-    // if (mysql_query(mysql_conn, query))
-    // {
-    //     fprintf(stderr, "Erreur lors du calcul du montant total : %s\n", mysql_error(mysql_conn));
-    //     // En cas d'erreur, annulez la transaction si nécessaire.
-    //     // ...
-    //     mysql_close(mysql_conn);
-    //     return false;
-    // }
-    // // Récupérer le montant total depuis le résultat de la requête
-    // // et effectuer d'autres opérations de création de facture.
+    result = mysql_store_result(mysql_conn);
+    if (result == NULL)
+    {
+        fprintf(stderr, "Aucun résultat de la requête.\n");
+        mysql_close(mysql_conn);
+        return -1;
+    }
+
+    row = mysql_fetch_row(result);
+    int numeroFacture;
+
+    if (atoi(row[0]) == 0)
+    {
+        // La table facture est vide, commencez par 0.
+        numeroFacture = 0;
+    }
+    else
+    {
+        // La table facture contient des données, récupérez le dernier ID de facture.
+        snprintf(query, sizeof(query), "SELECT MAX(idFacture) FROM facture");
+        if (mysql_query(mysql_conn, query))
+        {
+            fprintf(stderr, "Erreur lors de la récupération du dernier ID de facture : %s\n", mysql_error(mysql_conn));
+            mysql_close(mysql_conn);
+            return -1;
+        }
+
+        result = mysql_store_result(mysql_conn);
+        if (result == NULL)
+        {
+            fprintf(stderr, "Aucun résultat de la requête.\n");
+            mysql_close(mysql_conn);
+            return -1;
+        }
+
+        row = mysql_fetch_row(result);
+        numeroFacture = atoi(row[0]) + 1;
+    }
+
+    // Insérez la facture dans la table facture.
+    snprintf(query, sizeof(query), "INSERT INTO facture (idFacture, idClient, dateFacture, montant, paye) VALUES (%d, %d, NOW(), %.2f, 0)",
+             numeroFacture, idClient, montantTotalCaddie);
+
+    if (mysql_query(mysql_conn, query))
+    {
+        fprintf(stderr, "Erreur lors de l'insertion de la facture : %s\n", mysql_error(mysql_conn));
+        mysql_close(mysql_conn);
+        return -1;
+    }
+
+    // Parcourez le caddie et insérez chaque élément dans la table vente.
+    for (int i = 0; i < nombreArticlesCaddie; i++)
+    {
+        int idArticle = caddie[i].idArticle;
+        int quantite = caddie[i].quantite;
+        float prixUnitaire = caddie[i].prixUnitaire;
+
+        // Insérez l'élément du caddie dans la table vente.
+        snprintf(query, sizeof(query), "INSERT INTO vente (idFacture, idArticle, quantite, prixUnitaire) VALUES (%d, %d, %d, %.2f)",
+                 numeroFacture, idArticle, quantite, prixUnitaire);
+
+        if (mysql_query(mysql_conn, query))
+        {
+            fprintf(stderr, "Erreur lors de l'insertion de l'élément du caddie dans la table vente : %s\n", mysql_error(mysql_conn));
+            mysql_close(mysql_conn);
+            return -1;
+        }
+    }
+
+    // Réinitialisez le caddie en le vidant.
+    nombreArticlesCaddie = 0;
+    montantTotalCaddie = 0.0; // Réinitialisez également le montant total.
+
+    // Retournez le numéro de facture généré.
+    sprintf(reponse, "CONFIRMER#%d", numeroFacture);
 
     // Libérez la mémoire et fermez la connexion MySQL.
     mysql_close(mysql_conn);
 
-    return true;
+    return numeroFacture;
 }
-
 
 //***** Gestion de l'état du protocole ******************************
 int estPresent(int socket)
