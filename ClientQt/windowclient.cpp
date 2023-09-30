@@ -2,11 +2,32 @@
 #include "ui_windowclient.h"
 #include <QMessageBox>
 #include <string>
+
+#include "OVESPclient.h"
+#include "../lib/LibSockets.h"
 using namespace std;
 
 extern WindowClient *w;
 
 #define REPERTOIRE_IMAGES "images/"
+
+int sClient;
+
+void HandlerSIGINT(int s);
+
+bool clientLogged = false;
+
+int indiceArticle = 1;
+
+bool   OVESP_Login(const char* user,const char* password, const int nvClient);
+void   OVESP_Logout();
+void   OVESP_Consult(int idArticle);
+void   OVESP_Achat(int idArticle, int quantite);
+void   OVESP_Cancel(int idArticle);
+void   OVESP_Cancel_All();
+void   OVESP_Confirmer();
+
+void   Echange(char* requete, char* reponse);
 
 WindowClient::WindowClient(QWidget *parent) : QMainWindow(parent), ui(new Ui::WindowClient)
 {
@@ -32,6 +53,28 @@ WindowClient::WindowClient(QWidget *parent) : QMainWindow(parent), ui(new Ui::Wi
     // Exemples à supprimer
     setArticle("pommes",5.53,18,"pommes.jpg");
     ajouteArticleTablePanier("cerises",8.96,2);
+
+    // Armement des signaux
+    struct sigaction A;
+    A.sa_flags = 0;
+    sigemptyset(&A.sa_mask);
+    A.sa_handler = HandlerSIGINT;
+    if (sigaction(SIGINT,&A,NULL) == -1)
+    {
+      perror("Erreur de sigaction");
+      exit(1);
+    }
+
+    // Connexion sur le serveur
+    char serverIP[] = "192.168.109.130"; //Adresse IP du serveur / broadcast 192.168.109.255
+    int serverPort = 50000; //Numéro de port du serveur
+
+    if ((sClient = ClientSocket(serverIP, serverPort)) == -1)
+    {
+      perror("Erreur de ClientSocket");
+      exit(1);
+    }
+    printf("Connecte sur le serveur.\n");
 }
 
 WindowClient::~WindowClient()
@@ -273,47 +316,332 @@ void WindowClient::closeEvent(QCloseEvent *event)
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void WindowClient::on_pushButtonLogin_clicked()
 {
+  //int idClient = OVESP_Login(getNom(), getMotDePasse(), isNouveauClientChecked());
 
+  if (OVESP_Login(getNom(), getMotDePasse(), isNouveauClientChecked())
+  {
+    clientLogged = true;
+    loginOK();
+  }
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void WindowClient::on_pushButtonLogout_clicked()
 {
-
+  if(clientLogged)
+  {
+    OVESP_Logout();
+    clientLogged = false;
+  }
+  else
+  {
+    dialogueErreur("Erreur connection", "Le client est non connecter !");
+  }
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void WindowClient::on_pushButtonSuivant_clicked()
 {
-
+  if(clientLogged)
+  {
+    if(indiceArticle > 0 && indiceArticle < 22)
+    {
+      indiceArticle++;
+      OVESP_Consult(indiceArticle);
+    }
+  }
+  else
+  {
+    dialogueErreur("Erreur connection", "Le client est non connecter !");
+  }
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void WindowClient::on_pushButtonPrecedent_clicked()
 {
-
+  if(clientLogged)
+  {
+    if(indiceArticle > 0 && indiceArticle < 22)
+    {
+      indiceArticle--;
+      OVESP_Consult(indiceArticle);
+    }
+  }
+  else
+  {
+    dialogueErreur("Erreur connection", "Le client est non connecter !");
+  }
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void WindowClient::on_pushButtonAcheter_clicked()
 {
-
+  if(clientLogged)
+  {
+    OVESP_Achat(indiceArticle, getQuantite());
+  }
+  else
+  {
+    dialogueErreur("Erreur connection", "Le client est non connecter !");
+  }
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void WindowClient::on_pushButtonSupprimer_clicked()
 {
-
+  if(clientLogged)
+  {
+    OVESP_Cancel(getIndiceArticleSelectionne());
+  }
+  else
+  {
+    dialogueErreur("Erreur connection", "Le client est non connecter !");
+  }
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void WindowClient::on_pushButtonViderPanier_clicked()
 {
-
+  if(clientLogged)
+  {
+    OVESP_Cancel_All();
+  }
+  else
+  {
+    dialogueErreur("Erreur connection", "Le client est non connecter !");
+  }
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void WindowClient::on_pushButtonPayer_clicked()
 {
+  if(clientLogged)
+  {
+    OVESP_Confirmer();
+  }
+  else
+  {
+    dialogueErreur("Erreur connection", "Le client est non connecter !");
+  }
+}
 
+//***** Fin de connexion ********************************************
+void HandlerSIGINT(int s)
+{
+  printf("\nArret du client.\n");
+  OVESP_Logout();
+  close(sClient);
+  exit(0);
+}
+
+//***** Gestion du protocole OVESP ***********************************
+bool OVESP_Login(const char* user, const char* password, const int newUser)
+{
+  char requete[200],reponse[200];
+  bool onContinue = false;
+
+  // ***** Construction de la requete *********************
+  sprintf(requete,"LOGIN#%s#%s#%d",user, password, newUser);
+
+  // ***** Envoi requete + réception réponse **************
+  Echange(requete,reponse);
+
+  // ***** Parsing de la réponse **************************
+  char *ptr = strtok(reponse,"#"); // entête = LOGIN (normalement...)
+  ptr = strtok(NULL,"#"); // statut = ok ou ko
+  if (strcmp(ptr,"ok") == 0)
+  {
+    dialogueMessage("Login reussi", "Le client est connecté");
+    onContinue = true; 
+  }
+  else
+  {
+    ptr = strtok(NULL,"#"); // raison du ko
+    dialogueMessage("Erreur de login : ", ptr);
+  }
+  
+  return onContinue;
+}
+
+
+//*******************************************************************
+void OVESP_Logout()
+{
+  char requete[200],reponse[200];
+  int nbEcrits, nbLus;
+
+  // ***** Construction de la requete *********************
+  sprintf(requete,"LOGOUT");
+
+  // ***** Envoi requete + réception réponse **************
+  Echange(requete,reponse);
+
+  // ***** Parsing de la réponse **************************
+  // pas vraiment utile...
+}
+
+
+//*******************************************************************
+void OVESP_Consult(int idArticle)
+{
+  char requete[200],reponse[200];
+
+  // ***** Construction de la requete *********************
+  sprintf(requete,"CONSULT#%d", idArticle);
+
+  // ***** Envoi requete + réception réponse **************
+  Echange(requete,reponse);
+
+  // ***** Parsing de la réponse **************************
+  char *ptr = strtok(reponse,"#"); // entête = CONSULT
+  ptr = strtok(NULL,"#"); // statut = ok ou ko
+  if (strcmp(ptr,"ok") == 0)
+  {
+     char *intitule = strtok(NULL,"#");
+     float prix = atof(strtok(NULL,"#"));
+     int stock = atoi(strtok(NULL,"#"));
+     char *image = strtok(NULL,"#");
+
+     setArticle(intitule, prix, stock, image);
+  }
+  else
+  {
+    ptr = strtok(NULL,"#"); // raison du ko
+    dialogueMessage("Erreur de consult : ", ptr);
+  }
+}
+
+//*******************************************************************
+void OVESP_Achat(int idArticle, int quantite)
+{
+  char requete[200],reponse[200];
+
+  // ***** Construction de la requete *********************
+  sprintf(requete,"ACHAT#%d#%d", idArticle, quantite);
+
+  // ***** Envoi requete + réception réponse **************
+  Echange(requete,reponse);
+
+  // ***** Parsing de la réponse **************************
+  char *ptr = strtok(reponse,"#"); // entête = ACHAT
+  ptr = strtok(NULL,"#"); // statut = ok ou ko
+  if (strcmp(ptr,"ok") == 0)
+  {
+     int idArticle = atoi(strtok(NULL,"#"));
+     int quantite = atoi(strtok(NULL,"#"));
+     float prix = atof(strtok(NULL,"#"));
+
+     dialogueMessage("Achat reussi idArticle : %d / quantite : %d / prix : %f", idArticle, quantite, prix);
+  }
+  else
+  {
+    ptr = strtok(NULL,"#"); // raison du ko
+    dialogueMessage("Erreur d'achat", ptr);
+  }
+}
+
+//*******************************************************************
+void   OVESP_Cancel(int idArticle)
+{
+  char requete[200],reponse[200];
+
+  // ***** Construction de la requete *********************
+  sprintf(requete,"CANCEL#%d", idArticle);
+
+  // ***** Envoi requete + réception réponse **************
+  Echange(requete,reponse);
+
+  // ***** Parsing de la réponse **************************
+  char *ptr = strtok(reponse,"#"); // entête = CANCEL
+  ptr = strtok(NULL,"#"); // statut = ok ou ko
+  if (strcmp(ptr,"ok") == 0)
+  {
+     dialogueMessage("Cancel", "Supression reussi de l'article");
+  }
+  else
+  {
+    ptr = strtok(NULL,"#"); // raison du ko
+    dialogueMessage("Erreur de cancel : ", ptr);
+  }
+
+}
+
+
+//*******************************************************************
+void   OVESP_Cancel_All()
+{
+  char requete[200],reponse[200];
+
+  // ***** Construction de la requete *********************
+  sprintf(requete,"CANCEL_ALL#");
+
+  // ***** Envoi requete + réception réponse **************
+  Echange(requete,reponse);
+
+  // ***** Parsing de la réponse **************************
+  char *ptr = strtok(reponse,"#"); // entête = CANCEL
+  ptr = strtok(NULL,"#"); // statut = ok ou ko
+  if (strcmp(ptr,"ok") == 0)
+  {
+     dialogueMessage("Cancel_All", "Supression reussi du panier");
+  }
+  else
+  {
+    ptr = strtok(NULL,"#"); // raison du ko
+    dialogueMessage("Erreur de cancel all : ", ptr);
+  }
+}
+
+//*******************************************************************
+void OVESP_Confirmer()
+{
+  // ***** Construction de la requete *********************
+  sprintf(requete,"CONFIRMER#");
+
+  // ***** Envoi requete + réception réponse **************
+  Echange(requete,reponse);
+
+  // ***** Parsing de la réponse **************************
+  char *ptr = strtok(reponse,"#"); // entête = CONFIRMER
+  ptr = strtok(NULL,"#"); // statut = ok ou ko
+  if (strcmp(ptr,"ok") == 0)
+  {
+     int idFacture = atoi(strtok(NULL,"#"));
+     dialogueMessage("Facture", "Creation de facture reussi");
+  }
+  else
+  {
+    ptr = strtok(NULL,"#"); // raison du ko
+    dialogueMessage("Erreur de facturation", ptr);
+  }
+}
+
+
+//***** Echange de données entre client et serveur ******************
+void Echange(char* requete, char* reponse)
+{
+  int nbEcrits, nbLus;
+
+  // ***** Envoi de la requete ****************************
+  if ((nbEcrits = Send(sClient,requete,strlen(requete))) == -1)
+  {
+    perror("Erreur de Send");
+    close(sClient);
+    exit(1);
+  }
+
+  // ***** Attente de la reponse **************************
+  if ((nbLus = Receive(sClient,reponse)) < 0)
+  {
+    perror("Erreur de Receive");
+    close(sClient);
+    exit(1);
+  }
+  if (nbLus == 0)
+  {
+    printf("Serveur arrete, pas de reponse reçue...\n");
+    close(sClient);
+    exit(1);
+  }
+  reponse[nbLus] = 0;
 }

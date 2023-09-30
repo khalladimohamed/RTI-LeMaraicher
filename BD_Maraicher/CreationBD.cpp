@@ -39,46 +39,43 @@ typedef struct
 
 ARTICLE Elm[] = 
 {
-  {-1,"carottes",2.16f,9,"carottes.jpg"},
-  {-1,"cerises",9.75f,8,"cerises.jpg"},
-  {-1,"artichaut",1.62f,15,"artichaut.jpg"},
-  {-1,"bananes",2.6f,8,"bananes.jpg"},
-  {-1,"champignons",10.25f,4,"champignons.jpg"},
-  {-1,"concombre",1.17f,5,"concombre.jpg"},
-  {-1,"courgette",1.17f,14,"courgette.jpg"},
-  {-1,"haricots",10.82f,7,"haricots.jpg"},
-  {-1,"laitue",1.62f,10,"laitue.jpg"},
-  {-1,"oranges",3.78f,23,"oranges.jpg"},
-  {-1,"oignons",2.12f,4,"oignons.jpg"},
-  {-1,"nectarines",10.38f,6,"nectarines.jpg"},
-  {-1,"peches",8.48f,11,"peches.jpg"},
-  {-1,"poivron",1.29f,13,"poivron.jpg"},
-  {-1,"pommes de terre",2.17f,25,"pommesDeTerre.jpg"},
-  {-1,"pommes",4.00f,26,"pommes.jpg"},
-  {-1,"citrons",4.44f,11,"citrons.jpg"},
-  {-1,"ail",1.08f,14,"ail.jpg"},
-  {-1,"aubergine",1.62f,17,"aubergine.jpg"},
-  {-1,"echalotes",6.48f,13,"echalotes.jpg"},
-  {-1,"tomates",5.49f,22,"tomates.jpg"}
+  {1,"carottes",2.16f,9,"carottes.jpg"},
+  {2,"cerises",9.75f,8,"cerises.jpg"},
+  {3,"artichaut",1.62f,15,"artichaut.jpg"},
+  {4,"bananes",2.6f,8,"bananes.jpg"},
+  {5,"champignons",10.25f,4,"champignons.jpg"},
+  {6,"concombre",1.17f,5,"concombre.jpg"},
+  {7,"courgette",1.17f,14,"courgette.jpg"},
+  {8,"haricots",10.82f,7,"haricots.jpg"},
+  {9,"laitue",1.62f,10,"laitue.jpg"},
+  {10,"oranges",3.78f,23,"oranges.jpg"},
+  {11,"oignons",2.12f,4,"oignons.jpg"},
+  {12,"nectarines",10.38f,6,"nectarines.jpg"},
+  {13,"peches",8.48f,11,"peches.jpg"},
+  {14,"poivron",1.29f,13,"poivron.jpg"},
+  {15,"pommes de terre",2.17f,25,"pommesDeTerre.jpg"},
+  {16,"pommes",4.00f,26,"pommes.jpg"},
+  {17,"citrons",4.44f,11,"citrons.jpg"},
+  {18,"ail",1.08f,14,"ail.jpg"},
+  {19,"aubergine",1.62f,17,"aubergine.jpg"},
+  {20,"echalotes",6.48f,13,"echalotes.jpg"},
+  {21,"tomates",5.49f,22,"tomates.jpg"}
 };
 
 CLIENT Clients[] = {
     {1, "client1", "password1"},
     {2, "client2", "password2"},
-    // Ajoutez d'autres clients ici
 };
 
 FACTURE Factures[] = {
     {1, 1, "2023-09-26", 20.5, 1},
     {2, 2, "2023-09-27", 30.0, 0},
-    // Ajoutez d'autres factures ici
 };
 
 VENTE Ventes[] = {
     {1, 1, 3},
     {1, 2, 2},
     {2, 3, 5},
-    // Ajoutez d'autres ventes ici
 };
 
 int main(int argc,char *argv[])

@@ -8,7 +8,7 @@ bool  OVESP(char* requete, char* reponse, int socket);
 bool  OVESP_Login(const char* user,const char* password, const int nvClient);
 int   OVESP_Consult(int idArticle, char* reponse);
 int   OVESP_Achat(int idAricle, int quantite, char* reponse);
-bool  OVESP_Caddie(char* reponse);
+bool  OVESP_Caddie(int idClient, char* reponse);
 bool  OVESP_Cancel(int idArticle);
 bool  OVESP_Cancel_All();
 bool  OVESP_Confirmer();

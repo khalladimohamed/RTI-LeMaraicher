@@ -5,6 +5,7 @@
 #include <pthread.h>
 
 #include "OVESPserveur.h"
+#include "../lib/LibSockets.h"
 
 
 
@@ -323,6 +324,9 @@ bool OVESP_Login(const char* user, const char* password, const int nvClient)
             pthread_mutex_unlock(&mysqlMutex);
             return false;
         }
+
+        //pour recuperer la derniere valeur inserer avec AUTO INCREMENT 
+        int idClient = (int)mysql_insert_id(mysql_conn);
 
         mysql_close(mysql_conn);
         pthread_mutex_unlock(&mysqlMutex);
@@ -674,7 +678,7 @@ bool OVESP_Cancel_All()
     return true;
 }
 
-int OVESP_Confirmer(char* reponse)
+int OVESP_Confirmer(int idClient, char* reponse)
 {
     pthread_mutex_lock(&mysqlMutex);
 
@@ -696,7 +700,7 @@ int OVESP_Confirmer(char* reponse)
     char query[256];
 
     // Vérifiez si la table facture est vide.
-    snprintf(query, sizeof(query), "SELECT COUNT(*) FROM facture");
+    snprintf(query, sizeof(query), "SELECT COUNT(*) FROM factures");
     if (mysql_query(mysql_conn, query))
     {
         fprintf(stderr, "Erreur lors de la vérification de la table facture : %s\n", mysql_error(mysql_conn));
@@ -715,42 +719,11 @@ int OVESP_Confirmer(char* reponse)
     }
 
     row = mysql_fetch_row(result);
-    int numeroFacture;
-
-    if (atoi(row[0]) == 0)
-    {
-        // La table facture est vide, commencez par 0.
-        numeroFacture = 0;
-    }
-    else
-    {
-        // La table facture contient des données, récupérez le dernier ID de facture.
-        snprintf(query, sizeof(query), "SELECT MAX(idFacture) FROM facture");
-        if (mysql_query(mysql_conn, query))
-        {
-            fprintf(stderr, "Erreur lors de la récupération du dernier ID de facture : %s\n", mysql_error(mysql_conn));
-            mysql_close(mysql_conn);
-            pthread_mutex_unlock(&mysqlMutex);
-            return -1;
-        }
-
-        result = mysql_store_result(mysql_conn);
-        if (result == NULL)
-        {
-            fprintf(stderr, "Aucun résultat de la requête.\n");
-            mysql_close(mysql_conn);
-            pthread_mutex_unlock(&mysqlMutex);
-            return -1;
-        }
-
-        row = mysql_fetch_row(result);
-        numeroFacture = atoi(row[0]) + 1;
-    }
 
     // Insérez la facture dans la table facture.
     pthread_mutex_lock(&mutexMontantTotalCaddie); 
-    snprintf(query, sizeof(query), "INSERT INTO facture (idFacture, idClient, dateFacture, montant, paye) VALUES (%d, %d, NOW(), %.2f, 0)",
-             numeroFacture, idClient, montantTotalCaddie);
+    snprintf(query, sizeof(query), "INSERT INTO factures (idClient, dateFacture, montant, paye) VALUES (%d, NOW(), %.2f, 0)",
+             idClient, montantTotalCaddie);
     pthread_mutex_unlock(&mutexMontantTotalCaddie); 
 
     if (mysql_query(mysql_conn, query))
@@ -761,7 +734,10 @@ int OVESP_Confirmer(char* reponse)
         return -1;
     }
 
-    // Parcourez le caddie et insérez chaque élément dans la table vente.
+    //pour recuperer la derniere valeur inserer avec AUTO INCREMENT 
+    int numeroFacture = (int)mysql_insert_id(mysql_conn);
+
+    // Parcourir le caddie et insérer chaque élément dans la table vente.
     pthread_mutex_lock(&mutexNombreArticlesCaddie); 
     for (int i = 0; i < nombreArticlesCaddie; i++)
     {
@@ -771,7 +747,7 @@ int OVESP_Confirmer(char* reponse)
         float prixUnitaire = caddie[i].prixUnitaire;
         pthread_mutex_unlock(&mutexCaddie);
 
-        // Insérez l'élément du caddie dans la table vente.
+        // Insérer l'élément du caddie dans la table vente.
         snprintf(query, sizeof(query), "INSERT INTO vente (idFacture, idArticle, quantite, prixUnitaire) VALUES (%d, %d, %d, %.2f)",
                  numeroFacture, idArticle, quantite, prixUnitaire);
 
@@ -785,18 +761,18 @@ int OVESP_Confirmer(char* reponse)
         }
     }
 
-    // Réinitialise le caddie en le vidant.
+    // Réinitialiser le caddie en le vidant.
     nombreArticlesCaddie = 0;
     pthread_mutex_unlock(&mutexNombreArticlesCaddie); 
-    // Réinitialise le montant total.
+    // Réinitialiser le montant total.
     pthread_mutex_lock(&mutexMontantTotalCaddie); 
     montantTotalCaddie = 0.0; 
     pthread_mutex_unlock(&mutexMontantTotalCaddie); 
 
-    // Retournez le numéro de facture généré.
+    // Retourner le numéro de facture généré.
     sprintf(reponse, "CONFIRMER#ok#%d", numeroFacture);
 
-    // Libérez la mémoire et fermez la connexion MySQL.
+    // Libérer la mémoire et fermez la connexion MySQL.
     mysql_close(mysql_conn);
 
     pthread_mutex_unlock(&mysqlMutex);
