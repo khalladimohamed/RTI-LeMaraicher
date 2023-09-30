@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <pthread.h>
+#include <mysql.h>
+#include <time.h>
 
 #include "OVESPserveur.h"
 #include "../lib/LibSockets.h"
@@ -16,6 +18,7 @@ pthread_mutex_t mysqlMutex = PTHREAD_MUTEX_INITIALIZER;
 //***** Etat du protocole : liste des clients loggés ****************
 int clients[NB_MAX_CLIENTS];
 int nbClients = 0;
+int idClientCourrant = -1;
 int estPresent(int socket);
 void ajoute(int socket);
 void retire(int socket);
@@ -245,7 +248,7 @@ bool OVESP(char* requete, char* reponse, int socket)
         else
         {
             
-            int resultat = OVESP_Confirmer(reponse);
+            int resultat = OVESP_Confirmer(idClientCourrant, reponse);
 
             if(resultat == -1)
             {
@@ -303,6 +306,8 @@ bool OVESP_Login(const char* user, const char* password, const int nvClient)
     if (mysql_num_rows(result) > 0)
     {
         // Le client existe et le mot de passe est correct.
+        row = mysql_fetch_row(result);
+        idClientCourrant = atoi(row[0]);
         mysql_free_result(result);
         mysql_close(mysql_conn);
         pthread_mutex_unlock(&mysqlMutex);
@@ -326,7 +331,7 @@ bool OVESP_Login(const char* user, const char* password, const int nvClient)
         }
 
         //pour recuperer la derniere valeur inserer avec AUTO INCREMENT 
-        int idClient = (int)mysql_insert_id(mysql_conn);
+        idClientCourrant = (int)mysql_insert_id(mysql_conn);
 
         mysql_close(mysql_conn);
         pthread_mutex_unlock(&mysqlMutex);
@@ -515,7 +520,7 @@ int OVESP_Achat(int idArticle, int quantite, char* reponse)
 bool OVESP_Caddie(char* reponse)
 {
     // Construire la réponse en fonction des articles dans le caddie
-    char contenuDuCaddie[1024];
+    char contenuDuCaddie[200];
     pthread_mutex_lock(&mutexNombreArticlesCaddie); 
     if (nombreArticlesCaddie > 0)
     {
@@ -551,8 +556,6 @@ bool OVESP_Cancel(int idArticle)
     MYSQL* mysql_conn; 
     MYSQL_RES* result;
     MYSQL_ROW row;
-
-    MYSQL* mysql_conn; // Connexion MySQL
 
     mysql_conn = mysql_init(NULL);
 
@@ -744,7 +747,7 @@ int OVESP_Confirmer(int idClient, char* reponse)
         pthread_mutex_lock(&mutexCaddie);
         int idArticle = caddie[i].idArticle;
         int quantite = caddie[i].quantite;
-        float prixUnitaire = caddie[i].prixUnitaire;
+        float prixUnitaire = caddie[i].prix;
         pthread_mutex_unlock(&mutexCaddie);
 
         // Insérer l'élément du caddie dans la table vente.

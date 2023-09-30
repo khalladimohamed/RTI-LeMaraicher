@@ -1,7 +1,13 @@
 #include "windowclient.h"
 #include "ui_windowclient.h"
 #include <QMessageBox>
-#include <string>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#include <signal.h>
+#include <pthread.h>
+#include <time.h>
 
 #include "../lib/LibSockets.h"
 using namespace std;
@@ -317,7 +323,7 @@ void WindowClient::on_pushButtonLogin_clicked()
 {
   //int idClient = OVESP_Login(getNom(), getMotDePasse(), isNouveauClientChecked());
 
-  if (OVESP_Login(getNom(), getMotDePasse(), isNouveauClientChecked())
+  if (OVESP_Login(getNom(), getMotDePasse(), isNouveauClientChecked()))
   {
     clientLogged = true;
     loginOK();
@@ -450,13 +456,13 @@ bool OVESP_Login(const char* user, const char* password, const int newUser)
   ptr = strtok(NULL,"#"); // statut = ok ou ko
   if (strcmp(ptr,"ok") == 0)
   {
-    dialogueMessage("Login reussi", "Le client est connecté");
+    w->dialogueMessage("Login reussi", "Le client est connecté");
     onContinue = true; 
   }
   else
   {
     ptr = strtok(NULL,"#"); // raison du ko
-    dialogueMessage("Erreur de login", ptr);
+    w->dialogueErreur("Erreur de login", ptr);
   }
   
   return onContinue;
@@ -498,12 +504,12 @@ void OVESP_Consult(int idArticle)
      int stock = atoi(strtok(NULL,"#"));
      char *image = strtok(NULL,"#");
 
-     setArticle(intitule, prix, stock, image);
+     w->setArticle(intitule, prix, stock, image);
   }
   else
   {
     ptr = strtok(NULL,"#"); // raison du ko
-    dialogueMessage("Erreur de consult", ptr);
+    w->dialogueErreur("Erreur de consult", ptr);
   }
 }
 
@@ -528,12 +534,12 @@ void OVESP_Achat(int idArticle, int quantite)
      float prix = atof(strtok(NULL,"#"));
 
      //dialogueMessage("Achat reussi idArticle : %d / quantite : %d / prix : %f", idArticle, quantite, prix);
-     dialogueMessage("Achat reussi");
+     w->dialogueMessage("Achat", "Achat reussi");
   }
   else
   {
     ptr = strtok(NULL,"#"); // raison du ko
-    dialogueMessage("Erreur d'achat", ptr);
+    w->dialogueErreur("Erreur d'achat", ptr);
   }
 }
 
@@ -553,12 +559,12 @@ void   OVESP_Cancel(int idArticle)
   ptr = strtok(NULL,"#"); // statut = ok ou ko
   if (strcmp(ptr,"ok") == 0)
   {
-     dialogueMessage("Cancel", "Supression reussi de l'article");
+     w->dialogueMessage("Cancel", "Supression reussi de l'article");
   }
   else
   {
     ptr = strtok(NULL,"#"); // raison du ko
-    dialogueMessage("Erreur de cancel", ptr);
+    w->dialogueErreur("Erreur de cancel", ptr);
   }
 
 }
@@ -580,18 +586,20 @@ void   OVESP_Cancel_All()
   ptr = strtok(NULL,"#"); // statut = ok ou ko
   if (strcmp(ptr,"ok") == 0)
   {
-     dialogueMessage("Cancel_All", "Supression reussi du panier");
+     w->dialogueMessage("Cancel_All", "Supression reussi du panier");
   }
   else
   {
     ptr = strtok(NULL,"#"); // raison du ko
-    dialogueMessage("Erreur de cancel all", ptr);
+    w->dialogueErreur("Erreur de cancel all", ptr);
   }
 }
 
 //*******************************************************************
 void OVESP_Confirmer()
 {
+  char requete[200],reponse[200];
+
   // ***** Construction de la requete *********************
   sprintf(requete,"CONFIRMER#");
 
@@ -604,12 +612,12 @@ void OVESP_Confirmer()
   if (strcmp(ptr,"ok") == 0)
   {
      int idFacture = atoi(strtok(NULL,"#"));
-     dialogueMessage("Facture", "Creation de facture reussi");
+     w->dialogueMessage("Facture", "Creation de facture reussi");
   }
   else
   {
     ptr = strtok(NULL,"#"); // raison du ko
-    dialogueMessage("Erreur de facturation", ptr);
+    w->dialogueErreur("Erreur de facturation", ptr);
   }
 }
 

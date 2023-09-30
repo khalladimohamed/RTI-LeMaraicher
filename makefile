@@ -20,7 +20,7 @@ ServeurTest:	LibSockets.o serveur_test.o
 
 ServeurAchat:	LibSockets.o serveurAchat.o OVESPserveur.o
 		echo compilation du ServeurAchat
-		g++ -Wno-unused-parameter -o ServeurAchat LibSockets.o serveurAchat.o OVESPserveur.o -lpthread
+		g++ -Wno-unused-parameter -o ServeurAchat LibSockets.o serveurAchat.o OVESPserveur.o $(SQL) -lpthread
 	
 mainclient.o:	ClientQt/mainclient.cpp
 				echo compilation de mainclient
@@ -44,11 +44,11 @@ serveur_test.o: lib/serveur_test.c
 
 OVESPserveur.o: Serveur/OVESPserveur.cpp
 				echo compilation de OVESPserveur
-				$(COMP) Serveur/OVESPserveur.cpp -c
+				$(COMP) $(SQL) Serveur/OVESPserveur.cpp -c
 
 serveurAchat.o: Serveur/serveurAchat.cpp
 				echo compilation de serveurAchat
-				$(COMP) Serveur/serveurAchat.cpp -c
+				$(COMP) $(SQL) Serveur/serveurAchat.cpp -c
 
 client_test.o: lib/client_test.c
 				echo compilation de client_test

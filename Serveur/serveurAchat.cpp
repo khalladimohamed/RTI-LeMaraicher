@@ -4,6 +4,8 @@
 #include <string.h>
 #include <signal.h>
 #include <pthread.h>
+#include <mysql.h>
+#include <time.h>
 
 #include "OVESPserveur.h"
 #include "../lib/LibSockets.h"
@@ -13,7 +15,7 @@ void HandlerSIGINT(int s);
 void TraitementConnexion(int sService);
 void* FctThreadClient(void* p);
 int sEcoute;
-
+int serverPort = 50000; // Numéro de port du serveur
 
 // Gestion du pool de threads
 #define NB_THREADS_POOL 2
@@ -24,14 +26,9 @@ pthread_mutex_t mutexSocketsAcceptees;
 pthread_cond_t condSocketsAcceptees;
 
 
-int main(int argc,char* argv[])
+int main()
 {
-    if (argc != 2)
-    {
-        printf("Erreur...\n");
-        printf("USAGE : Serveur portServeur\n");
-        exit(1);
-    }
+    
     // Initialisation socketsAcceptees
     pthread_mutex_init(&mutexSocketsAcceptees, NULL);
     pthread_cond_init(&condSocketsAcceptees, NULL);
@@ -49,7 +46,7 @@ int main(int argc,char* argv[])
         exit(1);
     }
     // Creation de la socket d'écoute
-    if ((sEcoute = ServerSocket(atoi(argv[1]))) == -1)
+    if ((sEcoute = ServerSocket(serverPort)) == -1)
     {
         perror("Erreur de ServeurSocket");
         exit(1);
@@ -73,7 +70,7 @@ int main(int argc,char* argv[])
         {
             perror("Erreur de Accept");
             close(sEcoute);
-            SMOP_Close();
+            OVESP_Close();
             exit(1);
         }
 
