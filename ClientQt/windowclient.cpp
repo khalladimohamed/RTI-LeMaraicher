@@ -3,7 +3,6 @@
 #include <QMessageBox>
 #include <string>
 
-#include "OVESPclient.h"
 #include "../lib/LibSockets.h"
 using namespace std;
 
@@ -457,7 +456,7 @@ bool OVESP_Login(const char* user, const char* password, const int newUser)
   else
   {
     ptr = strtok(NULL,"#"); // raison du ko
-    dialogueMessage("Erreur de login : ", ptr);
+    dialogueMessage("Erreur de login", ptr);
   }
   
   return onContinue;
@@ -475,9 +474,6 @@ void OVESP_Logout()
 
   // ***** Envoi requete + réception réponse **************
   Echange(requete,reponse);
-
-  // ***** Parsing de la réponse **************************
-  // pas vraiment utile...
 }
 
 
@@ -507,7 +503,7 @@ void OVESP_Consult(int idArticle)
   else
   {
     ptr = strtok(NULL,"#"); // raison du ko
-    dialogueMessage("Erreur de consult : ", ptr);
+    dialogueMessage("Erreur de consult", ptr);
   }
 }
 
@@ -531,7 +527,8 @@ void OVESP_Achat(int idArticle, int quantite)
      int quantite = atoi(strtok(NULL,"#"));
      float prix = atof(strtok(NULL,"#"));
 
-     dialogueMessage("Achat reussi idArticle : %d / quantite : %d / prix : %f", idArticle, quantite, prix);
+     //dialogueMessage("Achat reussi idArticle : %d / quantite : %d / prix : %f", idArticle, quantite, prix);
+     dialogueMessage("Achat reussi");
   }
   else
   {
@@ -561,7 +558,7 @@ void   OVESP_Cancel(int idArticle)
   else
   {
     ptr = strtok(NULL,"#"); // raison du ko
-    dialogueMessage("Erreur de cancel : ", ptr);
+    dialogueMessage("Erreur de cancel", ptr);
   }
 
 }
@@ -588,7 +585,7 @@ void   OVESP_Cancel_All()
   else
   {
     ptr = strtok(NULL,"#"); // raison du ko
-    dialogueMessage("Erreur de cancel all : ", ptr);
+    dialogueMessage("Erreur de cancel all", ptr);
   }
 }
 

@@ -17,8 +17,11 @@ ClientTest:	LibSockets.o client_test.o
 ServeurTest:	LibSockets.o serveur_test.o
 		echo compilation du ServeurTest
 		g++ -Wno-unused-parameter -o ServeurTest LibSockets.o serveur_test.o -lpthread
-	
 
+ServeurAchat:	LibSockets.o serveurAchat.o OVESPserveur.o
+		echo compilation du ServeurAchat
+		g++ -Wno-unused-parameter -o ServeurAchat LibSockets.o serveurAchat.o OVESPserveur.o -lpthread
+	
 mainclient.o:	ClientQt/mainclient.cpp
 				echo compilation de mainclient
 				$(COMP) $(QT) ClientQt/mainclient.cpp -c
@@ -39,6 +42,14 @@ serveur_test.o: lib/serveur_test.c
 				echo compilation de serveur_test
 				$(COMP) lib/serveur_test.c -c
 
+OVESPserveur.o: Serveur/OVESPserveur.cpp
+				echo compilation de OVESPserveur
+				$(COMP) Serveur/OVESPserveur.cpp -c
+
+serveurAchat.o: Serveur/serveurAchat.cpp
+				echo compilation de serveurAchat
+				$(COMP) Serveur/serveurAchat.cpp -c
+
 client_test.o: lib/client_test.c
 				echo compilation de client_test
 				$(COMP) lib/client_test.c -c
@@ -48,4 +59,4 @@ CreationBD:	BD_Maraicher/CreationBD.cpp
 			$(COMP) BD_Maraicher/CreationBD.cpp $(SQL) -o CreationBD
 
 clean:
-	rm -f *.o LeMaraicher
+	rm -f *.o LeMaraicher ClientTest ServeurTest ServeurAchat CreationBD
