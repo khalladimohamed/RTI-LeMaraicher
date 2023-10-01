@@ -150,7 +150,6 @@ void TraitementConnexion(int sService)
     {
         printf("\t[THREAD %p] Attente requete...\n",pthread_self());
         
-
         // ***** Reception Requete ******************
         if ((nbLus = Receive(sService,requete)) < 0)
         {
@@ -159,7 +158,6 @@ void TraitementConnexion(int sService)
             HandlerSIGINT(0);
         }
         
-
         // ***** Fin de connexion ? *****************
         if (nbLus == 0)
         {
@@ -170,11 +168,10 @@ void TraitementConnexion(int sService)
         requete[nbLus] = 0;
         printf("\t[THREAD %p] Requete recue = %s\n",pthread_self(),requete);
         
-
         // ***** Traitement de la requete ***********
-        onContinue = OVESP(requete,reponse,sService);
+        //onContinue = OVESP(requete,reponse,sService);
+        OVESP(requete,reponse,sService);
         
-
         // ***** Envoi de la reponse ****************
         if ((nbEcrits = Send(sService,reponse,strlen(reponse))) < 0)
         {

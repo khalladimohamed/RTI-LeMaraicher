@@ -11,7 +11,7 @@ int   OVESP_Achat(int idAricle, int quantite, char* reponse);
 bool  OVESP_Caddie(char* reponse);
 bool  OVESP_Cancel(int idArticle);
 bool  OVESP_Cancel_All();
-int  OVESP_Confirmer(int idClient, char* reponse);
+int   OVESP_Confirmer(int idClient, char* reponse);
 void  OVESP_Close();
 
 #endif

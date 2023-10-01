@@ -39,11 +39,6 @@ CADDIE caddie[MAX_TAILLE_CADDIE];
 int nombreArticlesCaddie = 0;    
 float montantTotalCaddie = 0.0;
 
-pthread_mutex_t mutexCaddie = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t mutexNombreArticlesCaddie = PTHREAD_MUTEX_INITIALIZER;
-pthread_mutex_t mutexMontantTotalCaddie = PTHREAD_MUTEX_INITIALIZER;
-
-
 
 //***** Parsing de la requete et creation de la reponse *************
 bool OVESP(char* requete, char* reponse, int socket)
@@ -86,11 +81,9 @@ bool OVESP(char* requete, char* reponse, int socket)
 	// ***** LOGOUT *****************************************
 	if (strcmp(ptr,"LOGOUT") == 0)
 	{
-		printf("\t[THREAD %p] LOGOUT\n",pthread_self());
-		pthread_mutex_lock(&mutexNombreArticlesCaddie); 
+		printf("\t[THREAD %p] LOGOUT\n",pthread_self()); 
         if(nombreArticlesCaddie != 0)
 			OVESP_Cancel_All();
-		pthread_mutex_unlock(&mutexNombreArticlesCaddie); 
         retire(socket);
 		sprintf(reponse,"LOGOUT#ok");
 		return false;
@@ -224,11 +217,11 @@ bool OVESP(char* requete, char* reponse, int socket)
 
             if(resultat)
             {
-                sprintf(reponse,"CANCEL_All#ok");
+                sprintf(reponse,"CANCEL_ALL#ok");
             }
             else
             {
-                sprintf(reponse,"CANCEL#ko#Le caddie est vide !");
+                sprintf(reponse,"CANCEL_ALL#ko#Le caddie est vide !");
                 return false; 
             }
         }
@@ -252,7 +245,7 @@ bool OVESP(char* requete, char* reponse, int socket)
 
             if(resultat == -1)
             {
-                sprintf(reponse,"CANCEL_All#ko#Problème avec la facture !");
+                sprintf(reponse,"CONFIRMER#ko#Problème avec la facture !");
             }
         }
 	}
@@ -390,15 +383,15 @@ int OVESP_Consult(int idArticle, char* reponse)
         row = mysql_fetch_row(result);
         int articleID = atoi(row[0]);
         const char* intitule = row[1];
-        int stock = atoi(row[3]);
         float prix = atof(row[2]);
+        int stock = atoi(row[3]);
         const char* image = row[4];
 
         mysql_free_result(result);
         mysql_close(mysql_conn);
 
         
-        sprintf(reponse, "CONSULT#ok#%d#%s#%d#%.2f#%s", articleID, intitule, stock, prix, image);
+        sprintf(reponse, "CONSULT#ok#%s#%.2f#%d#%s", intitule, prix, stock, image);
 
         pthread_mutex_unlock(&mysqlMutex);
         return articleID;
@@ -478,8 +471,6 @@ int OVESP_Achat(int idArticle, int quantite, char* reponse)
             mysql_free_result(result);
             mysql_close(mysql_conn);
 
-            pthread_mutex_lock(&mutexCaddie);
-            pthread_mutex_lock(&mutexNombreArticlesCaddie); 
             // Ajoutez l'article au caddie
         	if (nombreArticlesCaddie < MAX_TAILLE_CADDIE)
         	{
@@ -489,15 +480,11 @@ int OVESP_Achat(int idArticle, int quantite, char* reponse)
             	caddie[nombreArticlesCaddie].prix = quantite * prix;
             	nombreArticlesCaddie++;
         	}
-            pthread_mutex_unlock(&mutexCaddie);
-            pthread_mutex_unlock(&mutexNombreArticlesCaddie); 
 
         	// Mise à jour du montant total du caddie
-            pthread_mutex_lock(&mutexMontantTotalCaddie); 
         	montantTotalCaddie += quantite * prix;
-            pthread_mutex_unlock(&mutexMontantTotalCaddie); 
-
-            sprintf(reponse, "ACHAT#ok#%d#%d#%.2f", articleID, quantite, quantite * prix);
+            printf("ACHAT#ok#%d#%s#%d#%.2f", articleID, intitule, quantite, prix);
+            sprintf(reponse, "ACHAT#ok#%d#%s#%d#%.2f", articleID, intitule, quantite, prix);
 
             pthread_mutex_unlock(&mysqlMutex);
             return articleID;
@@ -520,25 +507,20 @@ int OVESP_Achat(int idArticle, int quantite, char* reponse)
 bool OVESP_Caddie(char* reponse)
 {
     // Construire la réponse en fonction des articles dans le caddie
-    char contenuDuCaddie[200];
-    pthread_mutex_lock(&mutexNombreArticlesCaddie); 
+    char contenuDuCaddie[200]; 
     if (nombreArticlesCaddie > 0)
     {
-        pthread_mutex_lock(&mutexCaddie);
-        snprintf(contenuDuCaddie, sizeof(contenuDuCaddie), "CADDIE#ok#");
+        snprintf(contenuDuCaddie, sizeof(contenuDuCaddie), "CADDIE#ok");
         for (int i = 0; i < nombreArticlesCaddie; i++)
         {
             char articleInfo[256];
             snprintf(articleInfo, sizeof(articleInfo), "%d,%s,%d,%.2f;", caddie[i].idArticle, caddie[i].intitule, caddie[i].quantite, caddie[i].prix);
             strncat(contenuDuCaddie, articleInfo, sizeof(contenuDuCaddie));
-        }
-        pthread_mutex_unlock(&mutexCaddie);
-        pthread_mutex_unlock(&mutexNombreArticlesCaddie); 
+        } 
     }
     else
     {
         snprintf(contenuDuCaddie, sizeof(contenuDuCaddie), "CADDIE#ko#Aucun article dans le caddie;");
-        pthread_mutex_unlock(&mutexNombreArticlesCaddie); 
         return false;
     }
 
@@ -571,8 +553,6 @@ bool OVESP_Cancel(int idArticle)
     
     // 1. Rechercher l'article dans le caddie en fonction de son ID.
     int indiceArticleDansCaddie = -1;
-    pthread_mutex_lock(&mutexCaddie);
-    pthread_mutex_lock(&mutexNombreArticlesCaddie); 
     for (int i = 0; i < nombreArticlesCaddie; i++)
     {
         if (caddie[i].idArticle == idArticle)
@@ -581,17 +561,13 @@ bool OVESP_Cancel(int idArticle)
             break;
         }
     }
-    pthread_mutex_unlock(&mutexNombreArticlesCaddie); 
-    pthread_mutex_unlock(&mutexCaddie);
 
     char query[256];
 
     if (indiceArticleDansCaddie != -1)
     {
         // 2. Metter à jour la base de données avec la nouvelle quantité de l'article.
-        pthread_mutex_lock(&mutexCaddie);
         int nouvelleQuantite = caddie[indiceArticleDansCaddie].quantite;
-        pthread_mutex_unlock(&mutexCaddie);
         snprintf(query, sizeof(query), "UPDATE articles SET stock = stock + %d WHERE id = %d", nouvelleQuantite, idArticle);
 
         if (mysql_query(mysql_conn, query))
@@ -603,15 +579,11 @@ bool OVESP_Cancel(int idArticle)
         }
 
         // 3. Supprimer l'article du caddie.
-        pthread_mutex_lock(&mutexNombreArticlesCaddie); 
-        pthread_mutex_lock(&mutexCaddie);
         for (int i = indiceArticleDansCaddie; i < nombreArticlesCaddie - 1; i++)
         {
             caddie[i] = caddie[i + 1];
         }
-        pthread_mutex_unlock(&mutexCaddie);
         nombreArticlesCaddie--;
-        pthread_mutex_unlock(&mutexNombreArticlesCaddie); 
     }
     else
     {
@@ -649,14 +621,11 @@ bool OVESP_Cancel_All()
     char query[256];
 
     // Parcourir le caddie et mettre à jour les stocks dans la base de données.
-    pthread_mutex_lock(&mutexNombreArticlesCaddie); 
     for (int i = 0; i < nombreArticlesCaddie; i++)
     {
-        pthread_mutex_lock(&mutexCaddie);
         int idArticle = caddie[i].idArticle;
         int quantite = caddie[i].quantite;
-        pthread_mutex_unlock(&mutexCaddie);
-
+        printf("test cancel_all quantite : %d / idArticle : %d\n", quantite, idArticle);
         // Mettre à jour le stock dans la base de données.
         snprintf(query, sizeof(query), "UPDATE articles SET stock = stock + %d WHERE id = %d", quantite, idArticle);
 
@@ -665,14 +634,12 @@ bool OVESP_Cancel_All()
             fprintf(stderr, "Erreur lors de la mise à jour du stock dans la base de données : %s\n", mysql_error(mysql_conn));
             mysql_close(mysql_conn);
             pthread_mutex_unlock(&mysqlMutex);
-            pthread_mutex_unlock(&mutexNombreArticlesCaddie); 
             return false;
         }
     }
 
     // Réinitialiser le caddie en le vidant.
     nombreArticlesCaddie = 0;
-    pthread_mutex_unlock(&mutexNombreArticlesCaddie); 
 
     // Libérez la mémoire et fermez la connexion MySQL.
     mysql_close(mysql_conn);
@@ -724,10 +691,8 @@ int OVESP_Confirmer(int idClient, char* reponse)
     row = mysql_fetch_row(result);
 
     // Insérez la facture dans la table facture.
-    pthread_mutex_lock(&mutexMontantTotalCaddie); 
-    snprintf(query, sizeof(query), "INSERT INTO factures (idClient, dateFacture, montant, paye) VALUES (%d, NOW(), %.2f, 0)",
-             idClient, montantTotalCaddie);
-    pthread_mutex_unlock(&mutexMontantTotalCaddie); 
+    snprintf(query, sizeof(query), "INSERT INTO factures (idClient, date, montant, paye) VALUES (%d, DATE_FORMAT(NOW(), '%%Y-%%m-%%d'), %.2f, 0)", idClient, montantTotalCaddie);
+
 
     if (mysql_query(mysql_conn, query))
     {
@@ -741,36 +706,28 @@ int OVESP_Confirmer(int idClient, char* reponse)
     int numeroFacture = (int)mysql_insert_id(mysql_conn);
 
     // Parcourir le caddie et insérer chaque élément dans la table vente.
-    pthread_mutex_lock(&mutexNombreArticlesCaddie); 
     for (int i = 0; i < nombreArticlesCaddie; i++)
     {
-        pthread_mutex_lock(&mutexCaddie);
         int idArticle = caddie[i].idArticle;
         int quantite = caddie[i].quantite;
         float prixUnitaire = caddie[i].prix;
-        pthread_mutex_unlock(&mutexCaddie);
 
         // Insérer l'élément du caddie dans la table vente.
-        snprintf(query, sizeof(query), "INSERT INTO vente (idFacture, idArticle, quantite, prixUnitaire) VALUES (%d, %d, %d, %.2f)",
-                 numeroFacture, idArticle, quantite, prixUnitaire);
+        snprintf(query, sizeof(query), "INSERT INTO ventes (idFacture, idArticle, quantite) VALUES (%d, %d, %d)", numeroFacture, idArticle, quantite);
 
         if (mysql_query(mysql_conn, query))
         {
             fprintf(stderr, "Erreur lors de l'insertion de l'élément du caddie dans la table vente : %s\n", mysql_error(mysql_conn));
             mysql_close(mysql_conn);
             pthread_mutex_unlock(&mysqlMutex);
-            pthread_mutex_unlock(&mutexNombreArticlesCaddie); 
             return -1;
         }
     }
 
     // Réinitialiser le caddie en le vidant.
     nombreArticlesCaddie = 0;
-    pthread_mutex_unlock(&mutexNombreArticlesCaddie); 
     // Réinitialiser le montant total.
-    pthread_mutex_lock(&mutexMontantTotalCaddie); 
     montantTotalCaddie = 0.0; 
-    pthread_mutex_unlock(&mutexMontantTotalCaddie); 
 
     // Retourner le numéro de facture généré.
     sprintf(reponse, "CONFIRMER#ok#%d", numeroFacture);

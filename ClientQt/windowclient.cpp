@@ -24,11 +24,22 @@ bool clientLogged = false;
 
 int indiceArticle = 1;
 
+typedef struct
+{
+    int idArticle;
+    char intitule[20];
+    float prix;
+    int quantite;
+} PANIER;
+
+PANIER tablePanier[10];
+int indicePanier = 0;
+
 bool   OVESP_Login(const char* user,const char* password, const int nvClient);
 void   OVESP_Logout();
 void   OVESP_Consult(int idArticle);
 void   OVESP_Achat(int idArticle, int quantite);
-void   OVESP_Cancel(int idArticle);
+void   OVESP_Cancel(int idArticle, int indiceAsupprimer);
 void   OVESP_Cancel_All();
 void   OVESP_Confirmer();
 
@@ -54,10 +65,6 @@ WindowClient::WindowClient(QWidget *parent) : QMainWindow(parent), ui(new Ui::Wi
 
     ui->pushButtonPayer->setText("Confirmer achat");
     setPublicite("!!! Bienvenue sur le Maraicher en ligne !!!");
-
-    // Exemples à supprimer
-    setArticle("pommes",5.53,18,"pommes.jpg");
-    ajouteArticleTablePanier("cerises",8.96,2);
 
     // Armement des signaux
     struct sigaction A;
@@ -321,113 +328,70 @@ void WindowClient::closeEvent(QCloseEvent *event)
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void WindowClient::on_pushButtonLogin_clicked()
 {
-  //int idClient = OVESP_Login(getNom(), getMotDePasse(), isNouveauClientChecked());
-
-  if (OVESP_Login(getNom(), getMotDePasse(), isNouveauClientChecked()))
+  if(strlen(getNom()) != 0 && strlen(getMotDePasse()) != 0)
   {
-    clientLogged = true;
-    loginOK();
+    if (OVESP_Login(getNom(), getMotDePasse(), isNouveauClientChecked()))
+      loginOK();
+  }
+  else
+  {
+    w->dialogueErreur("Erreur", "Encoder un login et un mdp svp !");
   }
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void WindowClient::on_pushButtonLogout_clicked()
 {
-  if(clientLogged)
-  {
-    OVESP_Logout();
-    clientLogged = false;
-  }
-  else
-  {
-    dialogueErreur("Erreur connection", "Le client est non connecter !");
-  }
+  OVESP_Logout();
+  logoutOK();
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void WindowClient::on_pushButtonSuivant_clicked()
 {
-  if(clientLogged)
+  if(indiceArticle >= 1 && indiceArticle <= 22)
   {
-    if(indiceArticle > 0 && indiceArticle < 22)
-    {
-      indiceArticle++;
-      OVESP_Consult(indiceArticle);
-    }
-  }
-  else
-  {
-    dialogueErreur("Erreur connection", "Le client est non connecter !");
+    OVESP_Consult(indiceArticle);
+    if(indiceArticle != 21)
+    indiceArticle++;
   }
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void WindowClient::on_pushButtonPrecedent_clicked()
 {
-  if(clientLogged)
+  if(indiceArticle >= 1 && indiceArticle <= 22)
   {
-    if(indiceArticle > 0 && indiceArticle < 22)
-    {
-      indiceArticle--;
-      OVESP_Consult(indiceArticle);
-    }
-  }
-  else
-  {
-    dialogueErreur("Erreur connection", "Le client est non connecter !");
+    OVESP_Consult(indiceArticle);
+    if(indiceArticle != 1)
+    indiceArticle--;
   }
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void WindowClient::on_pushButtonAcheter_clicked()
 {
-  if(clientLogged)
-  {
-    OVESP_Achat(indiceArticle, getQuantite());
-  }
-  else
-  {
-    dialogueErreur("Erreur connection", "Le client est non connecter !");
-  }
+  printf("test OVESP_Achat : %d, %d\n", indiceArticle - 1, getQuantite());
+  OVESP_Achat(indiceArticle - 1, getQuantite());
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void WindowClient::on_pushButtonSupprimer_clicked()
 {
-  if(clientLogged)
-  {
-    OVESP_Cancel(getIndiceArticleSelectionne());
-  }
-  else
-  {
-    dialogueErreur("Erreur connection", "Le client est non connecter !");
-  }
+  printf("test OVESP_Cancel : %d, %d\n", tablePanier[getIndiceArticleSelectionne()].idArticle, getIndiceArticleSelectionne());
+  OVESP_Cancel(tablePanier[getIndiceArticleSelectionne()].idArticle, getIndiceArticleSelectionne());
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void WindowClient::on_pushButtonViderPanier_clicked()
 {
-  if(clientLogged)
-  {
-    OVESP_Cancel_All();
-  }
-  else
-  {
-    dialogueErreur("Erreur connection", "Le client est non connecter !");
-  }
+  OVESP_Cancel_All();
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void WindowClient::on_pushButtonPayer_clicked()
 {
-  if(clientLogged)
-  {
-    OVESP_Confirmer();
-  }
-  else
-  {
-    dialogueErreur("Erreur connection", "Le client est non connecter !");
-  }
+  OVESP_Confirmer();
 }
 
 //***** Fin de connexion ********************************************
@@ -493,10 +457,12 @@ void OVESP_Consult(int idArticle)
 
   // ***** Envoi requete + réception réponse **************
   Echange(requete,reponse);
-
+  
   // ***** Parsing de la réponse **************************
   char *ptr = strtok(reponse,"#"); // entête = CONSULT
+  
   ptr = strtok(NULL,"#"); // statut = ok ou ko
+
   if (strcmp(ptr,"ok") == 0)
   {
      char *intitule = strtok(NULL,"#");
@@ -516,7 +482,7 @@ void OVESP_Consult(int idArticle)
 //*******************************************************************
 void OVESP_Achat(int idArticle, int quantite)
 {
-  char requete[200],reponse[200];
+  char requete[200], reponse[200];
 
   // ***** Construction de la requete *********************
   sprintf(requete,"ACHAT#%d#%d", idArticle, quantite);
@@ -530,10 +496,18 @@ void OVESP_Achat(int idArticle, int quantite)
   if (strcmp(ptr,"ok") == 0)
   {
      int idArticle = atoi(strtok(NULL,"#"));
+     char *intitule = strtok(NULL,"#");
      int quantite = atoi(strtok(NULL,"#"));
      float prix = atof(strtok(NULL,"#"));
 
-     //dialogueMessage("Achat reussi idArticle : %d / quantite : %d / prix : %f", idArticle, quantite, prix);
+     tablePanier[indicePanier].idArticle = idArticle;
+     strncpy(tablePanier[indicePanier].intitule, intitule, sizeof(tablePanier[indicePanier]));
+     tablePanier[indicePanier].prix = prix;
+     tablePanier[indicePanier].quantite = quantite;
+
+     indicePanier++;
+
+     w->ajouteArticleTablePanier(intitule, prix, quantite);
      w->dialogueMessage("Achat", "Achat reussi");
   }
   else
@@ -544,9 +518,9 @@ void OVESP_Achat(int idArticle, int quantite)
 }
 
 //*******************************************************************
-void   OVESP_Cancel(int idArticle)
+void   OVESP_Cancel(int idArticle, int indiceAsupprimer)
 {
-  char requete[200],reponse[200];
+  char requete[200], reponse[200];
 
   // ***** Construction de la requete *********************
   sprintf(requete,"CANCEL#%d", idArticle);
@@ -559,6 +533,19 @@ void   OVESP_Cancel(int idArticle)
   ptr = strtok(NULL,"#"); // statut = ok ou ko
   if (strcmp(ptr,"ok") == 0)
   {
+     for (int i = indiceAsupprimer; i < indicePanier - 1; i++) 
+     {
+        // Remplacer l'élément actuel par l'élément suivant
+        tablePanier[i] = tablePanier[i + 1];
+     }
+
+     indicePanier--;
+     w->videTablePanier();
+
+     for(int j = 0; j < indicePanier; j++)
+     {
+        w->ajouteArticleTablePanier(tablePanier[j].intitule, tablePanier[j].prix, tablePanier[j].quantite);
+     }
      w->dialogueMessage("Cancel", "Supression reussi de l'article");
   }
   else
@@ -571,21 +558,22 @@ void   OVESP_Cancel(int idArticle)
 
 
 //*******************************************************************
-void   OVESP_Cancel_All()
+void OVESP_Cancel_All()
 {
-  char requete[200],reponse[200];
+  char requete[200], reponse[200];
 
   // ***** Construction de la requete *********************
-  sprintf(requete,"CANCEL_ALL#");
+  sprintf(requete,"CANCEL_ALL");
 
   // ***** Envoi requete + réception réponse **************
   Echange(requete,reponse);
 
   // ***** Parsing de la réponse **************************
-  char *ptr = strtok(reponse,"#"); // entête = CANCEL
+  char *ptr = strtok(reponse,"#"); // entête = CANCEL_ALL
   ptr = strtok(NULL,"#"); // statut = ok ou ko
   if (strcmp(ptr,"ok") == 0)
   {
+     w->videTablePanier();
      w->dialogueMessage("Cancel_All", "Supression reussi du panier");
   }
   else
@@ -601,7 +589,7 @@ void OVESP_Confirmer()
   char requete[200],reponse[200];
 
   // ***** Construction de la requete *********************
-  sprintf(requete,"CONFIRMER#");
+  sprintf(requete,"CONFIRMER");
 
   // ***** Envoi requete + réception réponse **************
   Echange(requete,reponse);
