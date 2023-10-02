@@ -722,15 +722,15 @@ int OVESP_Confirmer(int idClient, char* reponse)
             pthread_mutex_unlock(&mysqlMutex);
             return -1;
         }
-    }
+    } 
+
+    // Retourner le numéro de facture généré.
+    sprintf(reponse, "CONFIRMER#ok#%.2f", montantTotalCaddie);
 
     // Réinitialiser le caddie en le vidant.
     nombreArticlesCaddie = 0;
     // Réinitialiser le montant total.
-    montantTotalCaddie = 0.0; 
-
-    // Retourner le numéro de facture généré.
-    sprintf(reponse, "CONFIRMER#ok#%d", numeroFacture);
+    montantTotalCaddie = 0.0;
 
     // Libérer la mémoire et fermez la connexion MySQL.
     mysql_close(mysql_conn);

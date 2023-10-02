@@ -22,7 +22,7 @@ void HandlerSIGINT(int s);
 
 bool clientLogged = false;
 
-int indiceArticle = 1;
+int indiceArticle = 0;
 
 typedef struct
 {
@@ -349,11 +349,11 @@ void WindowClient::on_pushButtonLogout_clicked()
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void WindowClient::on_pushButtonSuivant_clicked()
 {
-  if(indiceArticle >= 1 && indiceArticle <= 22)
+  if(indiceArticle >= 0 && indiceArticle <= 22)
   {
-    OVESP_Consult(indiceArticle);
     if(indiceArticle != 21)
-    indiceArticle++;
+      indiceArticle++;
+    OVESP_Consult(indiceArticle);
   }
 }
 
@@ -362,17 +362,17 @@ void WindowClient::on_pushButtonPrecedent_clicked()
 {
   if(indiceArticle >= 1 && indiceArticle <= 22)
   {
-    OVESP_Consult(indiceArticle);
     if(indiceArticle != 1)
-    indiceArticle--;
+      indiceArticle--;
+    OVESP_Consult(indiceArticle);
   }
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 void WindowClient::on_pushButtonAcheter_clicked()
 {
-  printf("test OVESP_Achat : %d, %d\n", indiceArticle - 1, getQuantite());
-  OVESP_Achat(indiceArticle - 1, getQuantite());
+  printf("test OVESP_Achat : %d, %d\n", indiceArticle, getQuantite());
+  OVESP_Achat(indiceArticle, getQuantite());
 }
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -573,7 +573,18 @@ void OVESP_Cancel_All()
   ptr = strtok(NULL,"#"); // statut = ok ou ko
   if (strcmp(ptr,"ok") == 0)
   {
+    
+    for (int i = 0; i < indicePanier; i++) 
+    {
+      tablePanier[i].idArticle = 0; 
+      tablePanier[i].intitule[0] = '\0'; 
+      tablePanier[i].prix = 0.0; 
+      tablePanier[i].quantite = 0;
+    }
+    indicePanier = 0;
+
      w->videTablePanier();
+     w->setTotal(0.0);
      w->dialogueMessage("Cancel_All", "Supression reussi du panier");
   }
   else
@@ -599,7 +610,8 @@ void OVESP_Confirmer()
   ptr = strtok(NULL,"#"); // statut = ok ou ko
   if (strcmp(ptr,"ok") == 0)
   {
-     int idFacture = atoi(strtok(NULL,"#"));
+     float montant = atof(strtok(NULL,"#"));
+     w->setTotal(montant);
      w->dialogueMessage("Facture", "Creation de facture reussi");
   }
   else
