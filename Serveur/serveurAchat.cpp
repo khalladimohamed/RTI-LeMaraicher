@@ -25,6 +25,8 @@ int indiceEcriture = 0, indiceLecture = 0;
 pthread_mutex_t mutexSocketsAcceptees;
 pthread_cond_t condSocketsAcceptees;
 
+MYSQL* mysql_conn; // Connexion MySQL
+
 
 int main()
 {
@@ -34,6 +36,16 @@ int main()
     pthread_cond_init(&condSocketsAcceptees, NULL);
     for (int i=0 ; i<TAILLE_FILE_ATTENTE ; i++)
         socketsAcceptees[i] = -1;
+
+    mysql_conn = mysql_init(NULL);
+    
+    // Établissez la connexion à la base de données MySQL.
+    if (mysql_real_connect(mysql_conn, "localhost","Student","PassStudent1_","PourStudent", 0, NULL, 0) == NULL)
+    {
+        fprintf(stderr, "Erreur de connexion MySQL : %s\n", mysql_error(mysql_conn));
+        mysql_close(mysql_conn);
+        return false;
+    }
 
     // Armement des signaux
     struct sigaction A;
@@ -136,6 +148,7 @@ void HandlerSIGINT(int s)
     
     pthread_mutex_unlock(&mutexSocketsAcceptees);
     OVESP_Close();
+    mysql_close(mysql_conn);
     exit(0);
 }
 
@@ -144,9 +157,13 @@ void TraitementConnexion(int sService)
 {
     char requete[200], reponse[200];
     int nbLus, nbEcrits;
-    bool onContinue = true;
+
+    CADDIE caddie[20]; 
+    int nombreArticlesCaddie = 0;    
+    float montantTotalCaddie = 0.0;
+    int idClientCourrant = -1;
     
-    while (onContinue)
+    while (1)
     {
         printf("\t[THREAD %p] Attente requete...\n",pthread_self());
         
@@ -169,8 +186,7 @@ void TraitementConnexion(int sService)
         printf("\t[THREAD %p] Requete recue = %s\n",pthread_self(),requete);
         
         // ***** Traitement de la requete ***********
-        //onContinue = OVESP(requete,reponse,sService);
-        OVESP(requete,reponse,sService);
+        OVESP(requete,reponse,sService, mysql_conn, caddie, &nombreArticlesCaddie, &montantTotalCaddie, &idClientCourrant);
         
         // ***** Envoi de la reponse ****************
         if ((nbEcrits = Send(sService,reponse,strlen(reponse))) < 0)
@@ -180,7 +196,5 @@ void TraitementConnexion(int sService)
             HandlerSIGINT(0);
         }
         printf("\t[THREAD %p] Reponse envoyee = %s\n",pthread_self(),reponse);
-        if (!onContinue)
-            printf("\t[THREAD %p] Fin de connexion de la socket %d\n",pthread_self(),sService);
     }
 }

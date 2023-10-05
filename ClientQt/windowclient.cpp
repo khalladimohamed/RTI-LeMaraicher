@@ -612,6 +612,16 @@ void OVESP_Confirmer()
   {
      float montant = atof(strtok(NULL,"#"));
      w->setTotal(montant);
+     for (int i = 0; i < indicePanier; i++) 
+    {
+      tablePanier[i].idArticle = 0; 
+      tablePanier[i].intitule[0] = '\0'; 
+      tablePanier[i].prix = 0.0; 
+      tablePanier[i].quantite = 0;
+    }
+    indicePanier = 0;
+
+     w->videTablePanier();
      w->dialogueMessage("Facture", "Creation de facture reussi");
   }
   else

@@ -18,7 +18,6 @@ pthread_mutex_t mysqlMutex = PTHREAD_MUTEX_INITIALIZER;
 //***** Etat du protocole : liste des clients loggés ****************
 int clients[NB_MAX_CLIENTS];
 int nbClients = 0;
-int idClientCourrant = -1;
 int estPresent(int socket);
 void ajoute(int socket);
 void retire(int socket);
@@ -26,22 +25,8 @@ void retire(int socket);
 pthread_mutex_t mutexClients = PTHREAD_MUTEX_INITIALIZER;
 
 
-//***** CADDIE ******************************************************
-typedef struct
-{
-    int idArticle;
-    char intitule[20];
-    int quantite;
-    float prix;
-} CADDIE;
-
-CADDIE caddie[MAX_TAILLE_CADDIE]; 
-int nombreArticlesCaddie = 0;    
-float montantTotalCaddie = 0.0;
-
-
 //***** Parsing de la requete et creation de la reponse *************
-bool OVESP(char* requete, char* reponse, int socket)
+bool OVESP(char* requete, char* reponse, int socket, MYSQL* mysql_conn, CADDIE* caddie, int* nombreArticlesCaddie, float* montantTotalCaddie, int* idClientCourrant)
 {
 
 	// ***** Récupération nom de la requete *****************
@@ -65,7 +50,7 @@ bool OVESP(char* requete, char* reponse, int socket)
 		}
 		else
 		{
-			if (OVESP_Login(user,password, newUser))
+			if (OVESP_Login(user,password, newUser, mysql_conn, idClientCourrant))
 			{
 				sprintf(reponse,"LOGIN#ok");
 				ajoute(socket);
@@ -83,7 +68,7 @@ bool OVESP(char* requete, char* reponse, int socket)
 	{
 		printf("\t[THREAD %p] LOGOUT\n",pthread_self()); 
         if(nombreArticlesCaddie != 0)
-			OVESP_Cancel_All();
+			OVESP_Cancel_All(mysql_conn, caddie, nombreArticlesCaddie, montantTotalCaddie);
         retire(socket);
 		sprintf(reponse,"LOGOUT#ok");
 		return false;
@@ -105,7 +90,7 @@ bool OVESP(char* requete, char* reponse, int socket)
         else
         {
             
-            int resultat = OVESP_Consult(idArticle, reponse);
+            int resultat = OVESP_Consult(idArticle, reponse, mysql_conn);
 
             if(resultat == -1) 
             { 
@@ -132,7 +117,7 @@ bool OVESP(char* requete, char* reponse, int socket)
         else
         {
             
-            int resultat = OVESP_Achat(idArticle, quantite, reponse);
+            int resultat = OVESP_Achat(idArticle, quantite, reponse, mysql_conn, caddie, nombreArticlesCaddie, montantTotalCaddie);
 
             if(resultat == -1) 
             { 
@@ -162,7 +147,7 @@ bool OVESP(char* requete, char* reponse, int socket)
         else
         {
             
-            bool resultat = OVESP_Caddie(reponse);
+            bool resultat = OVESP_Caddie(reponse, caddie, nombreArticlesCaddie);
 
             if(!resultat) 
                 return false; 
@@ -186,7 +171,7 @@ bool OVESP(char* requete, char* reponse, int socket)
         else
         {
             
-            bool resultat = OVESP_Cancel(idArticle);
+            bool resultat = OVESP_Cancel(idArticle, mysql_conn, caddie, nombreArticlesCaddie, montantTotalCaddie);
 
             if(resultat)
             {
@@ -213,7 +198,7 @@ bool OVESP(char* requete, char* reponse, int socket)
         else
         {
             
-            bool resultat = OVESP_Cancel_All();
+            bool resultat = OVESP_Cancel_All(mysql_conn, caddie, nombreArticlesCaddie, montantTotalCaddie);
 
             if(resultat)
             {
@@ -241,7 +226,7 @@ bool OVESP(char* requete, char* reponse, int socket)
         else
         {
             
-            int resultat = OVESP_Confirmer(idClientCourrant, reponse);
+            int resultat = OVESP_Confirmer(*idClientCourrant, reponse, mysql_conn, caddie, nombreArticlesCaddie, montantTotalCaddie);
 
             if(resultat == -1)
             {
@@ -254,26 +239,13 @@ bool OVESP(char* requete, char* reponse, int socket)
 }
 
 
-bool OVESP_Login(const char* user, const char* password, const int nvClient)
+bool OVESP_Login(const char* user, const char* password, const int nvClient, MYSQL* mysql_conn, int* idClientCourrant)
 {
     // Verrouiller le mutex pour protéger l'accès à la base de données MySQL
     pthread_mutex_lock(&mysqlMutex);
 
-    MYSQL* mysql_conn; // Connexion MySQL
 	MYSQL_RES* result; // Résultat de la requête
 	MYSQL_ROW row;     // Ligne de résultat
-
-    mysql_conn = mysql_init(NULL);
-    
-    // Établissez la connexion à la base de données MySQL.
-    if (mysql_real_connect(mysql_conn, "localhost","Student","PassStudent1_","PourStudent", 0, NULL, 0) == NULL)
-    {
-        fprintf(stderr, "Erreur de connexion MySQL : %s\n", mysql_error(mysql_conn));
-        mysql_close(mysql_conn);
-        // Déverrouiller le mutex après avoir terminé les opérations sur la base de données
-        pthread_mutex_unlock(&mysqlMutex);
-        return false;
-    }
 
     // Construisez et exécutez la requête SQL pour vérifier l'existence du client.
     char query[256];
@@ -282,7 +254,6 @@ bool OVESP_Login(const char* user, const char* password, const int nvClient)
     if (mysql_query(mysql_conn, query))
     {
         fprintf(stderr, "Erreur lors de l'exécution de la requête : %s\n", mysql_error(mysql_conn));
-        mysql_close(mysql_conn);
         pthread_mutex_unlock(&mysqlMutex);
         return false;
     }
@@ -291,7 +262,6 @@ bool OVESP_Login(const char* user, const char* password, const int nvClient)
     if (result == NULL)
     {
         fprintf(stderr, "Aucun résultat de la requête.\n");
-        mysql_close(mysql_conn);
         pthread_mutex_unlock(&mysqlMutex);
         return false;
     }
@@ -300,9 +270,8 @@ bool OVESP_Login(const char* user, const char* password, const int nvClient)
     {
         // Le client existe et le mot de passe est correct.
         row = mysql_fetch_row(result);
-        idClientCourrant = atoi(row[0]);
+        *idClientCourrant = atoi(row[0]);
         mysql_free_result(result);
-        mysql_close(mysql_conn);
         pthread_mutex_unlock(&mysqlMutex);
         return true;
     }
@@ -318,43 +287,28 @@ bool OVESP_Login(const char* user, const char* password, const int nvClient)
         if (mysql_query(mysql_conn, query))
         {
             fprintf(stderr, "Erreur lors de la création du nouveau client : %s\n", mysql_error(mysql_conn));
-            mysql_close(mysql_conn);
             pthread_mutex_unlock(&mysqlMutex);
             return false;
         }
 
         //pour recuperer la derniere valeur inserer avec AUTO INCREMENT 
-        idClientCourrant = (int)mysql_insert_id(mysql_conn);
+        *idClientCourrant = (int)mysql_insert_id(mysql_conn);
 
-        mysql_close(mysql_conn);
         pthread_mutex_unlock(&mysqlMutex);
         return true;
     }
 
-    mysql_close(mysql_conn);
     pthread_mutex_unlock(&mysqlMutex);
     return false;
 }
 
 
-int OVESP_Consult(int idArticle, char* reponse)
+int OVESP_Consult(int idArticle, char* reponse, MYSQL* mysql_conn)
 {
     pthread_mutex_lock(&mysqlMutex);
 
-    MYSQL* mysql_conn; 
     MYSQL_RES* result; 
     MYSQL_ROW row;    
-
-    mysql_conn = mysql_init(NULL);
-
-    // Établissez la connexion à la base de données MySQL.
-    if (mysql_real_connect(mysql_conn, "localhost","Student","PassStudent1_","PourStudent", 0, NULL, 0) == NULL)
-    {
-        fprintf(stderr, "Erreur de connexion MySQL : %s\n", mysql_error(mysql_conn));
-        mysql_close(mysql_conn);
-        pthread_mutex_unlock(&mysqlMutex);
-        return -1;
-    }
 
     // Construisez et exécutez la requête SQL pour consulter l'article.
     char query[256];
@@ -363,7 +317,6 @@ int OVESP_Consult(int idArticle, char* reponse)
     if (mysql_query(mysql_conn, query))
     {
         fprintf(stderr, "Erreur lors de l'exécution de la requête : %s\n", mysql_error(mysql_conn));
-        mysql_close(mysql_conn);
         pthread_mutex_unlock(&mysqlMutex);
         return -1;
     }
@@ -372,7 +325,6 @@ int OVESP_Consult(int idArticle, char* reponse)
     if (result == NULL)
     {
         fprintf(stderr, "Aucun résultat de la requête.\n");
-        mysql_close(mysql_conn);
         pthread_mutex_unlock(&mysqlMutex);
         return -1;
     }
@@ -388,41 +340,28 @@ int OVESP_Consult(int idArticle, char* reponse)
         const char* image = row[4];
 
         mysql_free_result(result);
-        mysql_close(mysql_conn);
 
         
         sprintf(reponse, "CONSULT#ok#%s#%.2f#%d#%s", intitule, prix, stock, image);
 
         pthread_mutex_unlock(&mysqlMutex);
+
         return articleID;
     }
 
     // L'article n'a pas été trouvé.
     mysql_free_result(result);
-    mysql_close(mysql_conn);
     pthread_mutex_unlock(&mysqlMutex);
     return -1;
 }
 
 
-int OVESP_Achat(int idArticle, int quantite, char* reponse)
+int OVESP_Achat(int idArticle, int quantite, char* reponse, MYSQL* mysql_conn, CADDIE* caddie, int* nombreArticlesCaddie, float* montantTotalCaddie)
 {
     pthread_mutex_lock(&mysqlMutex);
 
-    MYSQL* mysql_conn; 
     MYSQL_RES* result; 
     MYSQL_ROW row;
-
-    mysql_conn = mysql_init(NULL);
-
-    // Établissez la connexion à la base de données MySQL.
-    if (mysql_real_connect(mysql_conn, "localhost","Student","PassStudent1_","PourStudent", 0, NULL, 0) == NULL)
-    {
-        fprintf(stderr, "Erreur de connexion MySQL : %s\n", mysql_error(mysql_conn));
-        mysql_close(mysql_conn);
-        pthread_mutex_unlock(&mysqlMutex);
-        return -1;
-    }
 
     // Construisez et exécutez la requête SQL pour récupérer l'article.
     char query[256];
@@ -431,7 +370,6 @@ int OVESP_Achat(int idArticle, int quantite, char* reponse)
     if (mysql_query(mysql_conn, query))
     {
         fprintf(stderr, "Erreur lors de l'exécution de la requête : %s\n", mysql_error(mysql_conn));
-        mysql_close(mysql_conn);
         pthread_mutex_unlock(&mysqlMutex);
         return -1;
     }
@@ -440,7 +378,6 @@ int OVESP_Achat(int idArticle, int quantite, char* reponse)
     if (result == NULL)
     {
         fprintf(stderr, "Aucun résultat de la requête.\n");
-        mysql_close(mysql_conn);
         pthread_mutex_unlock(&mysqlMutex);
         return -1;
     }
@@ -463,26 +400,24 @@ int OVESP_Achat(int idArticle, int quantite, char* reponse)
             {
                 fprintf(stderr, "Erreur lors de la mise à jour du stock : %s\n", mysql_error(mysql_conn));
                 mysql_free_result(result);
-                mysql_close(mysql_conn);
                 pthread_mutex_unlock(&mysqlMutex);
                 return -1;
             }
 
             mysql_free_result(result);
-            mysql_close(mysql_conn);
 
             // Ajoutez l'article au caddie
-        	if (nombreArticlesCaddie < MAX_TAILLE_CADDIE)
+        	if (*nombreArticlesCaddie < 20)
         	{
-            	caddie[nombreArticlesCaddie].idArticle = articleID;
-            	strncpy(caddie[nombreArticlesCaddie].intitule, intitule, sizeof(caddie[nombreArticlesCaddie].intitule));
-            	caddie[nombreArticlesCaddie].quantite = quantite;
-            	caddie[nombreArticlesCaddie].prix = quantite * prix;
-            	nombreArticlesCaddie++;
+            	caddie[*nombreArticlesCaddie].idArticle = articleID;
+            	strncpy(caddie[*nombreArticlesCaddie].intitule, intitule, sizeof(caddie[*nombreArticlesCaddie].intitule));
+            	caddie[*nombreArticlesCaddie].quantite = quantite;
+            	caddie[*nombreArticlesCaddie].prix = quantite * prix;
+            	(*nombreArticlesCaddie)++;
         	}
 
         	// Mise à jour du montant total du caddie
-        	montantTotalCaddie += quantite * prix;
+        	*montantTotalCaddie += quantite * prix;
             printf("ACHAT#ok#%d#%s#%d#%.2f", articleID, intitule, quantite, prix);
             sprintf(reponse, "ACHAT#ok#%d#%s#%d#%.2f", articleID, intitule, quantite, prix);
 
@@ -498,20 +433,19 @@ int OVESP_Achat(int idArticle, int quantite, char* reponse)
 
     // L'article n'a pas été trouvé ou la quantité n'est pas suffisante.
     mysql_free_result(result);
-    mysql_close(mysql_conn);
     pthread_mutex_unlock(&mysqlMutex);
     return -1;
 }
 
 
-bool OVESP_Caddie(char* reponse)
+bool OVESP_Caddie(char* reponse, CADDIE* caddie, int* nombreArticlesCaddie)
 {
     // Construire la réponse en fonction des articles dans le caddie
     char contenuDuCaddie[200]; 
-    if (nombreArticlesCaddie > 0)
+    if (*nombreArticlesCaddie > 0)
     {
-        snprintf(contenuDuCaddie, sizeof(contenuDuCaddie), "CADDIE#ok");
-        for (int i = 0; i < nombreArticlesCaddie; i++)
+        snprintf(contenuDuCaddie, sizeof(contenuDuCaddie), "CADDIE#ok#");
+        for (int i = 0; i < *nombreArticlesCaddie; i++)
         {
             char articleInfo[256];
             snprintf(articleInfo, sizeof(articleInfo), "%d,%s,%d,%.2f;", caddie[i].idArticle, caddie[i].intitule, caddie[i].quantite, caddie[i].prix);
@@ -531,29 +465,14 @@ bool OVESP_Caddie(char* reponse)
 }
 
 
-bool OVESP_Cancel(int idArticle)
+bool OVESP_Cancel(int idArticle, MYSQL* mysql_conn, CADDIE* caddie, int* nombreArticlesCaddie, float* montantTotalCaddie)
 {
     pthread_mutex_lock(&mysqlMutex);
-
-    MYSQL* mysql_conn; 
-    MYSQL_RES* result;
-    MYSQL_ROW row;
-
-    mysql_conn = mysql_init(NULL);
-
-    // Établissez la connexion à la base de données MySQL.
-    if (mysql_real_connect(mysql_conn, "localhost","Student","PassStudent1_","PourStudent", 0, NULL, 0) == NULL)
-    {
-        fprintf(stderr, "Erreur de connexion MySQL : %s\n", mysql_error(mysql_conn));
-        mysql_close(mysql_conn);
-        pthread_mutex_unlock(&mysqlMutex);
-        return false;
-    }
 
     
     // 1. Rechercher l'article dans le caddie en fonction de son ID.
     int indiceArticleDansCaddie = -1;
-    for (int i = 0; i < nombreArticlesCaddie; i++)
+    for (int i = 0; i < *nombreArticlesCaddie; i++)
     {
         if (caddie[i].idArticle == idArticle)
         {
@@ -566,6 +485,7 @@ bool OVESP_Cancel(int idArticle)
 
     if (indiceArticleDansCaddie != -1)
     {
+        *montantTotalCaddie = *montantTotalCaddie - caddie[indiceArticleDansCaddie].quantite * caddie[indiceArticleDansCaddie].prix;
         // 2. Metter à jour la base de données avec la nouvelle quantité de l'article.
         int nouvelleQuantite = caddie[indiceArticleDansCaddie].quantite;
         snprintf(query, sizeof(query), "UPDATE articles SET stock = stock + %d WHERE id = %d", nouvelleQuantite, idArticle);
@@ -573,131 +493,80 @@ bool OVESP_Cancel(int idArticle)
         if (mysql_query(mysql_conn, query))
         {
             fprintf(stderr, "Erreur lors de la mise à jour du stock dans la base de données : %s\n", mysql_error(mysql_conn));
-            mysql_close(mysql_conn);
             pthread_mutex_unlock(&mysqlMutex);
             return false;
         }
 
         // 3. Supprimer l'article du caddie.
-        for (int i = indiceArticleDansCaddie; i < nombreArticlesCaddie - 1; i++)
+        for (int i = indiceArticleDansCaddie; i < *nombreArticlesCaddie - 1; i++)
         {
             caddie[i] = caddie[i + 1];
         }
-        nombreArticlesCaddie--;
+        (*nombreArticlesCaddie)--;
     }
     else
     {
         pthread_mutex_unlock(&mysqlMutex);
         return false;
     }
-    
-    // Libérez la mémoire et fermez la connexion MySQL.
-    mysql_close(mysql_conn);
 
     pthread_mutex_unlock(&mysqlMutex);
     return true;
 }
 
 
-bool OVESP_Cancel_All()
+bool OVESP_Cancel_All(MYSQL* mysql_conn, CADDIE* caddie, int* nombreArticlesCaddie, float* montantTotalCaddie)
 {
     pthread_mutex_lock(&mysqlMutex);
 
-    MYSQL* mysql_conn; 
-    MYSQL_RES* result;
-    MYSQL_ROW row;
-
-    mysql_conn = mysql_init(NULL);
-
-    // Établissez la connexion à la base de données MySQL.
-    if (mysql_real_connect(mysql_conn, "localhost", "Student", "PassStudent1_", "PourStudent", 0, NULL, 0) == NULL)
-    {
-        fprintf(stderr, "Erreur de connexion MySQL : %s\n", mysql_error(mysql_conn));
-        mysql_close(mysql_conn);
-        pthread_mutex_unlock(&mysqlMutex);
-        return false;
-    }
 
     char query[256];
 
     // Parcourir le caddie et mettre à jour les stocks dans la base de données.
-    for (int i = 0; i < nombreArticlesCaddie; i++)
+    for (int i = 0; i < *nombreArticlesCaddie; i++)
     {
         int idArticle = caddie[i].idArticle;
         int quantite = caddie[i].quantite;
-        printf("test cancel_all quantite : %d / idArticle : %d\n", quantite, idArticle);
         // Mettre à jour le stock dans la base de données.
         snprintf(query, sizeof(query), "UPDATE articles SET stock = stock + %d WHERE id = %d", quantite, idArticle);
 
         if (mysql_query(mysql_conn, query))
         {
             fprintf(stderr, "Erreur lors de la mise à jour du stock dans la base de données : %s\n", mysql_error(mysql_conn));
-            mysql_close(mysql_conn);
             pthread_mutex_unlock(&mysqlMutex);
             return false;
         }
     }
 
     // Réinitialiser le caddie en le vidant.
-    nombreArticlesCaddie = 0;
+    for (int i = 0; i < *nombreArticlesCaddie; i++) 
+    {
+      caddie[i].idArticle = 0; 
+      caddie[i].intitule[0] = '\0'; 
+      caddie[i].prix = 0.0; 
+      caddie[i].quantite = 0;
+    }
 
-    // Libérez la mémoire et fermez la connexion MySQL.
-    mysql_close(mysql_conn);
+    *nombreArticlesCaddie = 0;
+    *montantTotalCaddie = 0.0;
 
     pthread_mutex_unlock(&mysqlMutex);
     return true;
 }
 
-int OVESP_Confirmer(int idClient, char* reponse)
+int OVESP_Confirmer(int idClient, char* reponse, MYSQL* mysql_conn, CADDIE* caddie, int* nombreArticlesCaddie, float* montantTotalCaddie)
 {
     pthread_mutex_lock(&mysqlMutex);
 
-    MYSQL* mysql_conn; 
-    MYSQL_RES* result; 
-    MYSQL_ROW row;
-
-    mysql_conn = mysql_init(NULL);
-
-    // Établissez la connexion à la base de données MySQL.
-    if (mysql_real_connect(mysql_conn, "localhost", "Student", "PassStudent1_", "PourStudent", 0, NULL, 0) == NULL)
-    {
-        fprintf(stderr, "Erreur de connexion MySQL : %s\n", mysql_error(mysql_conn));
-        mysql_close(mysql_conn);
-        pthread_mutex_unlock(&mysqlMutex);
-        return -1;
-    }
-
     char query[256];
 
-    // Vérifiez si la table facture est vide.
-    snprintf(query, sizeof(query), "SELECT COUNT(*) FROM factures");
-    if (mysql_query(mysql_conn, query))
-    {
-        fprintf(stderr, "Erreur lors de la vérification de la table facture : %s\n", mysql_error(mysql_conn));
-        mysql_close(mysql_conn);
-        pthread_mutex_unlock(&mysqlMutex);
-        return -1;
-    }
-
-    result = mysql_store_result(mysql_conn);
-    if (result == NULL)
-    {
-        fprintf(stderr, "Aucun résultat de la requête.\n");
-        mysql_close(mysql_conn);
-        pthread_mutex_unlock(&mysqlMutex);
-        return -1;
-    }
-
-    row = mysql_fetch_row(result);
-
     // Insérez la facture dans la table facture.
-    snprintf(query, sizeof(query), "INSERT INTO factures (idClient, date, montant, paye) VALUES (%d, DATE_FORMAT(NOW(), '%%Y-%%m-%%d'), %.2f, 0)", idClient, montantTotalCaddie);
+    snprintf(query, sizeof(query), "INSERT INTO factures (idClient, date, montant, paye) VALUES (%d, DATE_FORMAT(NOW(), '%%Y-%%m-%%d'), %.2f, 0)", idClient, *montantTotalCaddie);
 
 
     if (mysql_query(mysql_conn, query))
     {
         fprintf(stderr, "Erreur lors de l'insertion de la facture : %s\n", mysql_error(mysql_conn));
-        mysql_close(mysql_conn);
         pthread_mutex_unlock(&mysqlMutex);
         return -1;
     }
@@ -706,11 +575,11 @@ int OVESP_Confirmer(int idClient, char* reponse)
     int numeroFacture = (int)mysql_insert_id(mysql_conn);
 
     // Parcourir le caddie et insérer chaque élément dans la table vente.
-    for (int i = 0; i < nombreArticlesCaddie; i++)
+    for (int i = 0; i < *nombreArticlesCaddie; i++)
     {
         int idArticle = caddie[i].idArticle;
         int quantite = caddie[i].quantite;
-        float prixUnitaire = caddie[i].prix;
+        //float prixUnitaire = caddie[i].prix;
 
         // Insérer l'élément du caddie dans la table vente.
         snprintf(query, sizeof(query), "INSERT INTO ventes (idFacture, idArticle, quantite) VALUES (%d, %d, %d)", numeroFacture, idArticle, quantite);
@@ -718,22 +587,25 @@ int OVESP_Confirmer(int idClient, char* reponse)
         if (mysql_query(mysql_conn, query))
         {
             fprintf(stderr, "Erreur lors de l'insertion de l'élément du caddie dans la table vente : %s\n", mysql_error(mysql_conn));
-            mysql_close(mysql_conn);
             pthread_mutex_unlock(&mysqlMutex);
             return -1;
         }
     } 
 
     // Retourner le numéro de facture généré.
-    sprintf(reponse, "CONFIRMER#ok#%.2f", montantTotalCaddie);
+    sprintf(reponse, "CONFIRMER#ok#%.2f", *montantTotalCaddie);
 
     // Réinitialiser le caddie en le vidant.
-    nombreArticlesCaddie = 0;
-    // Réinitialiser le montant total.
-    montantTotalCaddie = 0.0;
+    for (int i = 0; i < *nombreArticlesCaddie; i++) 
+    {
+      caddie[i].idArticle = 0; 
+      caddie[i].intitule[0] = '\0'; 
+      caddie[i].prix = 0.0; 
+      caddie[i].quantite = 0;
+    }
 
-    // Libérer la mémoire et fermez la connexion MySQL.
-    mysql_close(mysql_conn);
+    *nombreArticlesCaddie = 0;
+    *montantTotalCaddie = 0.0;
 
     pthread_mutex_unlock(&mysqlMutex);
     return numeroFacture;
