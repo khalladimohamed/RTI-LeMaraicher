@@ -247,7 +247,7 @@ bool OVESP_Login(const char* user, const char* password, const int nvClient, MYS
 	MYSQL_RES* result; // Résultat de la requête
 	MYSQL_ROW row;     // Ligne de résultat
 
-    // Construisez et exécutez la requête SQL pour vérifier l'existence du client.
+    // Construire et exécuter la requête SQL pour vérifier l'existence du client.
     char query[256];
     snprintf(query, sizeof(query), "SELECT * FROM clients WHERE login='%s' AND password='%s'", user, password);
     
@@ -281,7 +281,7 @@ bool OVESP_Login(const char* user, const char* password, const int nvClient, MYS
 
     if (nvClient)
     {
-        // Créez un nouveau client dans la table "clients" si nvClient est vrai.
+        // Créer un nouveau client dans la table "clients" si nvClient est vrai.
         snprintf(query, sizeof(query), "INSERT INTO clients (login, password) VALUES ('%s', '%s')", user, password);
 
         if (mysql_query(mysql_conn, query))
@@ -310,7 +310,6 @@ int OVESP_Consult(int idArticle, char* reponse, MYSQL* mysql_conn)
     MYSQL_RES* result; 
     MYSQL_ROW row;    
 
-    // Construisez et exécutez la requête SQL pour consulter l'article.
     char query[256];
     snprintf(query, sizeof(query), "SELECT * FROM articles WHERE id=%d", idArticle);
 
@@ -331,7 +330,7 @@ int OVESP_Consult(int idArticle, char* reponse, MYSQL* mysql_conn)
 
     if (mysql_num_rows(result) > 0)
     {
-        // L'article a été trouvé.
+        // L'article a été trouvé
         row = mysql_fetch_row(result);
         int articleID = atoi(row[0]);
         const char* intitule = row[1];
@@ -363,7 +362,6 @@ int OVESP_Achat(int idArticle, int quantite, char* reponse, MYSQL* mysql_conn, C
     MYSQL_RES* result; 
     MYSQL_ROW row;
 
-    // Construisez et exécutez la requête SQL pour récupérer l'article.
     char query[256];
     snprintf(query, sizeof(query), "SELECT * FROM articles WHERE id=%d", idArticle);
 
@@ -406,7 +404,7 @@ int OVESP_Achat(int idArticle, int quantite, char* reponse, MYSQL* mysql_conn, C
 
             mysql_free_result(result);
 
-            // Ajoutez l'article au caddie
+            // Ajouter l'article au caddie
         	if (*nombreArticlesCaddie < 20)
         	{
             	caddie[*nombreArticlesCaddie].idArticle = articleID;
@@ -470,7 +468,7 @@ bool OVESP_Cancel(int idArticle, MYSQL* mysql_conn, CADDIE* caddie, int* nombreA
     pthread_mutex_lock(&mysqlMutex);
 
     
-    // 1. Rechercher l'article dans le caddie en fonction de son ID.
+    // Rechercher l'article dans le caddie en fonction de son ID.
     int indiceArticleDansCaddie = -1;
     for (int i = 0; i < *nombreArticlesCaddie; i++)
     {
@@ -486,7 +484,7 @@ bool OVESP_Cancel(int idArticle, MYSQL* mysql_conn, CADDIE* caddie, int* nombreA
     if (indiceArticleDansCaddie != -1)
     {
         *montantTotalCaddie = *montantTotalCaddie - caddie[indiceArticleDansCaddie].quantite * caddie[indiceArticleDansCaddie].prix;
-        // 2. Metter à jour la base de données avec la nouvelle quantité de l'article.
+        // Metter à jour la base de données avec la nouvelle quantité de l'article.
         int nouvelleQuantite = caddie[indiceArticleDansCaddie].quantite;
         snprintf(query, sizeof(query), "UPDATE articles SET stock = stock + %d WHERE id = %d", nouvelleQuantite, idArticle);
 
@@ -497,7 +495,7 @@ bool OVESP_Cancel(int idArticle, MYSQL* mysql_conn, CADDIE* caddie, int* nombreA
             return false;
         }
 
-        // 3. Supprimer l'article du caddie.
+        // Supprimer l'article du caddie.
         for (int i = indiceArticleDansCaddie; i < *nombreArticlesCaddie - 1; i++)
         {
             caddie[i] = caddie[i + 1];
@@ -560,7 +558,7 @@ int OVESP_Confirmer(int idClient, char* reponse, MYSQL* mysql_conn, CADDIE* cadd
 
     char query[256];
 
-    // Insérez la facture dans la table facture.
+    // Insérer la facture dans la table facture.
     snprintf(query, sizeof(query), "INSERT INTO factures (idClient, date, montant, paye) VALUES (%d, DATE_FORMAT(NOW(), '%%Y-%%m-%%d'), %.2f, 0)", idClient, *montantTotalCaddie);
 
 
@@ -571,7 +569,7 @@ int OVESP_Confirmer(int idClient, char* reponse, MYSQL* mysql_conn, CADDIE* cadd
         return -1;
     }
 
-    //pour recuperer la derniere valeur inserer avec AUTO INCREMENT 
+    // Pour recuperer la derniere valeur inserer avec AUTO INCREMENT 
     int numeroFacture = (int)mysql_insert_id(mysql_conn);
 
     // Parcourir le caddie et insérer chaque élément dans la table vente.

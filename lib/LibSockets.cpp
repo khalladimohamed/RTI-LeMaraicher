@@ -37,7 +37,7 @@ int ServerSocket(int port)
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_flags = AI_PASSIVE | AI_NUMERICSERV; // pour une connexion passive
 	
-	//l'ip adresse doit etre null pour prendre l'adresse de la machine local
+	//l'adresse IP doit etre null pour prendre celle de la machine local
 	if (getaddrinfo(NULL, portChar, &hints, &results) != 0) 
 	{
 		close(sServeur);
@@ -66,14 +66,14 @@ int Accept(int sEcoute, char* ipClient)
         exit(1);
     }
 
-    // Accepte la connexion d'un client
+    // Accepter la connexion d'un client
     int clientSocket = accept(sEcoute, (struct sockaddr*)&clientAddr, &clientAddrLen);
     if (clientSocket == -1) {
         perror("Erreur de accept()");
         exit(1);
     }
 
-    // Récupère l'adresse IP distante du client à l'aide de getpeername
+    // Récupèrer l'adresse IP distante du client à l'aide de getpeername
     if (ipClient != NULL) {
         struct sockaddr_in peerAddr;
         socklen_t peerAddrLen = sizeof(peerAddr);

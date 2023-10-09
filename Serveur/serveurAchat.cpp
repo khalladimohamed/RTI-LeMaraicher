@@ -15,7 +15,7 @@ void HandlerSIGINT(int s);
 void TraitementConnexion(int sService);
 void* FctThreadClient(void* p);
 int sEcoute;
-int serverPort = 50000; // Numéro de port du serveur
+int serverPort = 50000;
 
 // Gestion du pool de threads
 #define NB_THREADS_POOL 2
@@ -25,7 +25,7 @@ int indiceEcriture = 0, indiceLecture = 0;
 pthread_mutex_t mutexSocketsAcceptees;
 pthread_cond_t condSocketsAcceptees;
 
-MYSQL* mysql_conn; // Connexion MySQL
+MYSQL* mysql_conn;
 
 
 int main()
