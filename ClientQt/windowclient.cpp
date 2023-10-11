@@ -466,6 +466,7 @@ void OVESP_Consult(int idArticle)
   if (strcmp(ptr,"ok") == 0)
   {
      char *intitule = strtok(NULL,"#");
+     setlocale(LC_NUMERIC, "C"); // Pour utiliser le point décimal ('.') comme caractere de base
      float prix = atof(strtok(NULL,"#"));
      int stock = atoi(strtok(NULL,"#"));
      char *image = strtok(NULL,"#");
@@ -498,6 +499,7 @@ void OVESP_Achat(int idArticle, int quantite)
      int idArticle = atoi(strtok(NULL,"#"));
      char *intitule = strtok(NULL,"#");
      int quantite = atoi(strtok(NULL,"#"));
+     setlocale(LC_NUMERIC, "C");
      float prix = atof(strtok(NULL,"#"));
 
      tablePanier[indicePanier].idArticle = idArticle;
@@ -610,6 +612,7 @@ void OVESP_Confirmer()
   ptr = strtok(NULL,"#"); // statut = ok ou ko
   if (strcmp(ptr,"ok") == 0)
   {
+     setlocale(LC_NUMERIC, "C");
      float montant = atof(strtok(NULL,"#"));
      w->setTotal(montant);
      for (int i = 0; i < indicePanier; i++) 
