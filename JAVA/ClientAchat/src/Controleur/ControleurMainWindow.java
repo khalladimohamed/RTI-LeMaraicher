@@ -115,7 +115,7 @@ public class ControleurMainWindow implements ActionListener {
 
                 if(mots[1].equals("ok"))
                 {
-                    mainWindow.ajouteArticleTablePanier(mots[3],Float.parseFloat(mots[5]),Integer.parseInt(mots[4]));
+                    mainWindow.ajouteArticleTablePanier(CurrentIdArticle+1, mots[3],Float.parseFloat(mots[5]),Integer.parseInt(mots[4]));
                     Consult(CurrentIdArticle);
                 }
                 else
@@ -129,10 +129,10 @@ public class ControleurMainWindow implements ActionListener {
 
         else if(source.getText().equals("Supprimer article"))
         {
-            if(mainWindow.getIndiceArticleSelectionne() == -1)
+            if(mainWindow.getIdArticleSelectionne() == -1)
                 return;
 
-            LibSocket.send(sSocket,"CANCEL#"+mainWindow.getIndiceArticleSelectionne());
+            LibSocket.send(sSocket,"CANCEL#"+mainWindow.getIdArticleSelectionne());
 
             String reponse = LibSocket.receive(sSocket);
 
@@ -149,13 +149,13 @@ public class ControleurMainWindow implements ActionListener {
 
         else if(source.getText().equals("Vider le panier"))
         {
-            LibSocket.send(sSocket, "CANCEL_ALL#" + mainWindow.getIndiceArticleSelectionne());
+            LibSocket.send(sSocket, "CANCEL_ALL");
 
             String reponse = LibSocket.receive(sSocket);
 
             String[] mots = reponse.split("#");
 
-            if(!mots[1].equals("OK"))
+            if(!mots[1].equals("ok"))
             {
                 mainWindow.dialogueErreur(mots[0],"Error");
                 return;
@@ -163,6 +163,7 @@ public class ControleurMainWindow implements ActionListener {
 
             Actualiser_Panier();
             Consult(CurrentIdArticle);
+            mainWindow.setTotal(0);
         }
 
         else if(source.getText().equals("Confirmer achat"))
@@ -173,10 +174,10 @@ public class ControleurMainWindow implements ActionListener {
 
             String[] mots = reponse.split("#");
 
-            if(mots[1].equals("OK"))
+            if(mots[1].equals("ok"))
             {
                 Actualiser_Panier();
-                mainWindow.setTotal(-1);
+                mainWindow.setTotal(0);
                 mainWindow.dialogueMessage("SUCCESS", "Achat reussi !");
             }
         }
@@ -204,26 +205,50 @@ public class ControleurMainWindow implements ActionListener {
 
     }
 
-    private void Actualiser_Panier()
-    {
+    private void Actualiser_Panier() {
         mainWindow.videTablePanier();
 
-        LibSocket.send(sSocket,"CADDIE");
+        LibSocket.send(sSocket, "CADDIE");
 
         String reponse = LibSocket.receive(sSocket);
 
         String[] mots = reponse.split("#");
 
-        int count = Integer.parseInt(mots[2]);
-        float total=0;
-        for(int i=0;i<count;i++)
-        {
-            total = total + Float.parseFloat(mots[i*5+7])*Integer.parseInt(mots[i*5+5]);
-            System.out.println(reponse);
-            mainWindow.ajouteArticleTablePanier(mots[i*5+4], Float.parseFloat(mots[i*5+7]), Integer.parseInt(mots[i*5+5]));
+        if (mots[0].equals("CADDIE") && mots[1].equals("ok")) {
+            String contenu;
+            if (mots.length >= 4) {
+                contenu = mots[3];
+
+                if (contenu.isEmpty()) {
+                    System.out.println("Le caddie est vide.");
+                } else {
+                    String[] articles = contenu.split(";");
+
+                    float total = 0;
+
+                    for (String article : articles) {
+                        String[] attributs = article.split(",");
+                        if (attributs.length == 4) {
+                            int idArticle = Integer.parseInt(attributs[0]);
+                            String intitule = attributs[1];
+                            int quantite = Integer.parseInt(attributs[2]);
+                            float prix = Float.parseFloat(attributs[3]);
+
+                            total += prix * quantite;
+                            System.out.println("ID: " + idArticle + ", Intitule: " + intitule + ", Quantite: " + quantite + ", Prix: " + prix);
+
+                            mainWindow.ajouteArticleTablePanier(idArticle, intitule, prix, quantite);
+                        }
+                    }
+
+                    mainWindow.setTotal(total);
+                }
+            }
+        } else {
+            // Gérer le cas où la réponse du serveur est incorrecte.
+            System.out.println("La réponse du serveur est incorrecte.");
         }
-
-        mainWindow.setTotal(total);
-
     }
+
+
 }

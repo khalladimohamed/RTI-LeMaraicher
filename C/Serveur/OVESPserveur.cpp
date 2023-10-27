@@ -438,26 +438,21 @@ int OVESP_Achat(int idArticle, int quantite, char* reponse, MYSQL* mysql_conn, C
 
 bool OVESP_Caddie(char* reponse, CADDIE* caddie, int* nombreArticlesCaddie)
 {
-    // Construire la réponse en fonction des articles dans le caddie
-    char contenuDuCaddie[200]; 
+    
     if (*nombreArticlesCaddie > 0)
     {
-        snprintf(contenuDuCaddie, sizeof(contenuDuCaddie), "CADDIE#ok#");
+        sprintf(reponse, "CADDIE#ok#%d#", *nombreArticlesCaddie);
         for (int i = 0; i < *nombreArticlesCaddie; i++)
         {
-            char articleInfo[256];
+            char articleInfo[50];
             snprintf(articleInfo, sizeof(articleInfo), "%d,%s,%d,%.2f;", caddie[i].idArticle, caddie[i].intitule, caddie[i].quantite, caddie[i].prix);
-            strncat(contenuDuCaddie, articleInfo, sizeof(contenuDuCaddie));
+            strcat(reponse, articleInfo);
         } 
     }
     else
     {
-        snprintf(contenuDuCaddie, sizeof(contenuDuCaddie), "CADDIE#ko#Aucun article dans le caddie;");
-        return false;
+        sprintf(reponse, "CADDIE#ok#%d", *nombreArticlesCaddie);
     }
-
-    // Copier le contenu du caddie dans la réponse
-    snprintf(reponse, sizeof(reponse), "%s", contenuDuCaddie);
 
     return true;
 }

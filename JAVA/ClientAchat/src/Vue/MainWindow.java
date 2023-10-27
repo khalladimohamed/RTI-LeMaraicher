@@ -7,7 +7,6 @@ import java.awt.event.WindowEvent;
 import java.awt.*;
 
 import Controleur.ControleurMainWindow;
-import com.formdev.flatlaf.themes.FlatMacLightLaf;
 
 public class MainWindow extends JFrame {
     private JTextField textFieldLogin;
@@ -33,18 +32,10 @@ public class MainWindow extends JFrame {
     private JTextField TotalTextField;
     private JLabel imageLabel;
     private JButton acheterButton;
+    private JScrollPane JScrollPanier;
 
 
     public MainWindow() {
-
-        FlatMacLightLaf.setup();
-
-        // Affichage de la fenêtre
-        try {
-            UIManager.setLookAndFeel(new FlatMacLightLaf());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
 
         JFrame frame = new JFrame("Le Maraicher en ligne");
         frame.setContentPane(MainPanel);
@@ -62,6 +53,14 @@ public class MainWindow extends JFrame {
             }
         });
 
+        DefaultTableModel model = new DefaultTableModel();
+        model.addColumn("Id");
+        model.addColumn("Article");
+        model.addColumn("Prix à l'unité");
+        model.addColumn("Quantité");
+
+        table = new JTable(model);
+        JScrollPanier.setViewportView(table);
     }
 
     public void setController(ControleurMainWindow controleurMainWindow)
@@ -198,10 +197,10 @@ public class MainWindow extends JFrame {
         setTotal(-1);
     }
 
-    public void ajouteArticleTablePanier(String article, float prix, int quantite) {
+    public void ajouteArticleTablePanier(int id, String article, float prix, int quantite) {
 
         DefaultTableModel model = (DefaultTableModel) table.getModel();
-        model.addRow(new Object[]{article, String.format("%.2f", prix)+"€", quantite});
+        model.addRow(new Object[]{id, article, String.format("%.2f", prix)+"€", quantite});
     }
 
     public void videTablePanier() {
@@ -209,9 +208,23 @@ public class MainWindow extends JFrame {
         model.setRowCount(0);
     }
 
-    public int getIndiceArticleSelectionne()
+    /*public int getIndiceArticleSelectionne()
     {
         return table.getSelectedRow();
+    }*/
+
+    public int getIdArticleSelectionne() {
+        int selectedRow = table.getSelectedRow();
+
+        if (selectedRow != -1) { // Vérifie que quelque chose est sélectionné
+            Object idArticleValue = table.getValueAt(selectedRow, 0);
+            if (idArticleValue instanceof Integer) {
+                return (int) idArticleValue;
+            }
+        }
+
+        // Valeur par défaut ou gestion d'erreur
+        return -1;
     }
 
     public void dialogueMessage(String titre, String message) {
