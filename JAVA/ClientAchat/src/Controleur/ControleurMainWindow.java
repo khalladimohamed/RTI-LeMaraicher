@@ -8,8 +8,6 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.net.Socket;
-import java.util.Timer;
-import java.util.TimerTask;
 
 public class ControleurMainWindow implements ActionListener {
     private MainWindow mainWindow;
@@ -35,32 +33,29 @@ public class ControleurMainWindow implements ActionListener {
                 throw new RuntimeException(ex);
             }
 
-            // Envoi de la requête
-            LibSocket.send(sSocket, "LOGIN#" + mainWindow.getNom() + "#" + mainWindow.getMotDePasse() + "#" + mainWindow.isNouveauClientChecked());
+            if(!mainWindow.getNom().isEmpty() && !mainWindow.getMotDePasse().isEmpty()) {
+                // Envoi de la requête
+                LibSocket.send(sSocket, "LOGIN#" + mainWindow.getNom() + "#" + mainWindow.getMotDePasse() + "#" + mainWindow.isNouveauClientChecked());
 
-            // Réponse du Serveur
-            Timer timer = new Timer();
-            timer.schedule(new TimerTask() {
-                @Override
-                public void run() {
-                    // Code à exécuter après 2 secondes
-                    String reponse = LibSocket.receive(sSocket);
+                // Réponse du Serveur
+                String reponse = LibSocket.receive(sSocket);
 
-                    String[] mots = reponse.split("#");
+                String[] mots = reponse.split("#");
 
-                    if (mots[0].equals("LOGIN")) {
-                        if (mots[1].equals("ok")) {
-                            Consult(CurrentIdArticle);
-                            mainWindow.LoginOK();
-                            mainWindow.dialogueMessage("LOGIN", "Le client est connecté");
-                            Actualiser_Panier();
-                        } else if (mots[1].equals("ko")) {
-                            mainWindow.dialogueErreur("LOGIN", mots[2]);
-                            return;
-                        }
+                if (mots[0].equals("LOGIN")) {
+                    if (mots[1].equals("ok")) {
+                        Consult(CurrentIdArticle);
+                        mainWindow.LoginOK();
+                        mainWindow.dialogueMessage("LOGIN", "Le client est connecté");
+                        Actualiser_Panier();
+                    } else if (mots[1].equals("ko")) {
+                        mainWindow.dialogueErreur("LOGIN", mots[2]);
                     }
                 }
-            }, 2000);
+
+            } else {
+                mainWindow.dialogueErreur("LOGIN", "Veuillez saisir un login et un mot de passe !");
+            }
 
         }
 
@@ -129,8 +124,10 @@ public class ControleurMainWindow implements ActionListener {
 
         else if(source.getText().equals("Supprimer article"))
         {
-            if(mainWindow.getIdArticleSelectionne() == -1)
+            if(mainWindow.getIdArticleSelectionne() == -1){
+                mainWindow.dialogueErreur("CANCEL", "Veuillez selectionner un article !");
                 return;
+            }
 
             LibSocket.send(sSocket,"CANCEL#"+mainWindow.getIdArticleSelectionne());
 
@@ -249,6 +246,5 @@ public class ControleurMainWindow implements ActionListener {
             System.out.println("La réponse du serveur est incorrecte.");
         }
     }
-
 
 }
