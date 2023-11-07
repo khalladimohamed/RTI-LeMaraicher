@@ -1,7 +1,6 @@
 package db;
 
 import ServeurGeneriqueTCP.Logger.Logger;
-import VESPAP.Reponse;
 import model.Article;
 import model.Facture;
 
@@ -19,7 +18,10 @@ public class DatabaseUseCase {
         this.logger = logger;
     }
 
-    public synchronized boolean isUsernameExists(String username)  {
+
+
+    public synchronized boolean isUsernameExists(String username)
+    {
         String query = "SELECT * FROM employes WHERE login = '" + username + "'";
 
         try {
@@ -41,11 +43,13 @@ public class DatabaseUseCase {
 
     }
 
-    public synchronized boolean isLoginOk(String username, String password)  {
+
+
+    public synchronized boolean isLoginOk(String username, String password)
+    {
         String query = "SELECT * FROM employes WHERE login = '" + username + "'";
 
         try {
-
 
             ResultSet resultSet = DatabaseConnection.executeQuery(query);
 
@@ -68,8 +72,10 @@ public class DatabaseUseCase {
         }
     }
 
-    public synchronized boolean addEmploye(String username, String password) {
 
+
+    public synchronized boolean addEmploye(String username, String password)
+    {
         System.out.println("addEmploye");
 
         String query = "INSERT INTO employes (login, password) VALUES ('" + username + "', '" + password + "')";
@@ -85,6 +91,7 @@ public class DatabaseUseCase {
         }
         return true;
     }
+
 
 
     public synchronized ArrayList<Facture> getFactures(int idClient) throws SQLException
@@ -114,45 +121,20 @@ public class DatabaseUseCase {
 
 
 
-    public synchronized String payFacture(int idFacture, String nom, int numeroCarte) throws SQLException
+    public synchronized String payFacture(int idFacture) throws SQLException
     {
-        String query = "SELECT * FROM CARTE_BANCAIRE WHERE NUMERO_CARTE = " + numeroCarte;
+        String query = "UPDATE factures SET paye = 1 WHERE id = " + idFacture;
 
-        ResultSet resultSet = DatabaseConnection.executeQuery(query);
-
-        if(!resultSet.next())
-        {
-            return "Carte bancaire invalide";
-        }
-
-        int idClient = resultSet.getInt("ID_CLIENT");
-
-        String query2 = "SELECT * FROM CLIENT WHERE ID = " + idClient;
-
-        ResultSet resultSet2 = DatabaseConnection.executeQuery(query2);
-
-        if(!resultSet2.next())
-        {
-            return "jamais arrive";
-        }
-
-        String nomDB = resultSet2.getString("USERNAME");
-
-        if(!nomDB.equals(nom))
-        {
-            return "Nom invalide";
-        }
-
-        String query3 = "UPDATE FACTURE SET PAYER = TRUE WHERE ID = " + idFacture;
-
-        DatabaseConnection.executeUpdate(query3);
+        DatabaseConnection.executeUpdate(query);
 
         return "OK";
     }
 
+
+
     public synchronized ArrayList<Article> getArticles(int idFacture)
     {
-        String query = "SELECT * FROM ARTICLE_FACTURE WHERE ID_FACTURE = " + idFacture;
+        String query = "SELECT * FROM ventes WHERE idFacture = " + idFacture;
 
         ArrayList<Article> articles = new ArrayList<>();
 
@@ -161,21 +143,20 @@ public class DatabaseUseCase {
 
             while(resultSet.next())
             {
-                int idArticle = resultSet.getInt("ID_ARTICLE");
-                String query2 = "SELECT * FROM ARTICLE WHERE ID = " + idArticle;
-                int quantite = resultSet.getInt("QUANTITE");
+                int idArticle = resultSet.getInt("idArticle");
+                String query2 = "SELECT * FROM articles WHERE id = " + idArticle;
+                int quantite = resultSet.getInt("quantite");
 
                 ResultSet resultSet2 = DatabaseConnection.executeQuery(query2);
 
                 resultSet2.next();
-                Article article = new Article(resultSet2.getString("INTITULE"), quantite, resultSet2.getFloat("PRIX"));
+                Article article = new Article(resultSet2.getString("intitule"), quantite, resultSet2.getFloat("prix"));
 
                 articles.add(article);
 
             }
 
             return articles;
-
 
         }
         catch (SQLException e)

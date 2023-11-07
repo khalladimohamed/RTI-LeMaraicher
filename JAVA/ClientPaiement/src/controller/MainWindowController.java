@@ -3,28 +3,27 @@ package controller;
 
 import VESPAP.*;
 import Vue.MainWindow;
+import com.formdev.flatlaf.themes.FlatMacLightLaf;
 import model.Facture;
-import view.dialog.CustomDialog;
-import view.window.WindowClient;
+import Vue.PayementWindow;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
-import java.util.Properties;
 
 
-public class MainWindowController implements ActionListener, MouseListener {
 
-    private WindowClient mainWindow;
+public class MainWindowController implements ActionListener{
+
+    private MainWindow mainWindow;
     private Socket socket;
     private ObjectOutputStream oos;
     private ObjectInputStream ois;
+
     private int CurrentIdArticle = 0;
 
     public MainWindowController(MainWindow mainWindow)
@@ -33,6 +32,8 @@ public class MainWindowController implements ActionListener, MouseListener {
         oos = null;
         ois = null;
     }
+
+
 
     @Override
     public void actionPerformed(ActionEvent e) {
@@ -52,65 +53,22 @@ public class MainWindowController implements ActionListener, MouseListener {
             {
                 Payer();
             }
-        }
-        else if (e.getSource() instanceof JTextField) {
-            JTextField source = (JTextField) e.getSource();
-
-            System.out.println("TextField");
-
-            if(source.getToolTipText().equals("NumClient"))
+            else if (source.getText().equals("Afficher les factures"))
             {
                 GetFactures();
             }
-        }
-
-    }
-
-    public void mouseClicked(MouseEvent e) {
-        System.out.println("Mouse Clicked");
-        JTable source = (JTable) e.getSource();
-        if (source.getToolTipText().equals("Facture"))
-        {
-            int idFacture = (int) source.getValueAt(source.getSelectedRow(), 0);
-
-            RequeteGetArticles requete = new RequeteGetArticles(idFacture);
-
-            try {
-                oos.writeObject(requete);
-                ReponseGetArticles reponse = (ReponseGetArticles) ois.readObject();
-
-                mainWindow.videTableArticle();
-
-                while(reponse.getArticles().size() > 0)
-                {
-                    mainWindow.ajouteArticleTable(reponse.getArticles().get(0).getIntitule(), reponse.getArticles().get(0).getPrixUnitaire(), reponse.getArticles().get(0).getQuantite());
-                    reponse.getArticles().remove(0);
-                }
-
-            }
-            catch (IOException | ClassNotFoundException ex)
+            else if (source.getText().equals("Recuperer le detail de la facture"))
             {
-                mainWindow.dialogueErreur("Erreur", "Erreur IO object requete Article" + ex.getMessage());
+                GetArticles();
             }
-
-
-
-
         }
+
     }
+
+
 
     private void Login()
     {
-        Properties prop = new Properties();
-
-//        try (FileInputStream fis = new FileInputStream("properties.properties")) {
-//            prop.load(fis);
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        }
-
-//        String ipServeur = prop.getProperty("Serveur");
-//        int portServeur = Integer.parseInt(prop.getProperty("Port"));
         String login = mainWindow.getNom();
         String password = mainWindow.getMotDePasse();
         boolean isNew = mainWindow.isNouveauEmployeChecked();
@@ -140,6 +98,8 @@ public class MainWindowController implements ActionListener, MouseListener {
 
     }
 
+
+
     private void Logout()
     {
         try
@@ -159,17 +119,29 @@ public class MainWindowController implements ActionListener, MouseListener {
 
     }
 
+
+
     private void Payer()
     {
+        FlatMacLightLaf.setup();
 
-        CustomDialog Dialog = new CustomDialog(mainWindow, "Payer");
-        CustomDialogController controller = new CustomDialogController(Dialog, this.socket, this.oos, this.ois, mainWindow.getIndiceFactureSelectionne());
-        Dialog.setController(controller);
-        Dialog.setVisible(true);
+        // Affichage de la fenêtre
+        try {
+            UIManager.setLookAndFeel(new FlatMacLightLaf());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        PayementWindow payementWindow = new PayementWindow(mainWindow, "Payement");
+        CustomDialogController controller = new CustomDialogController(payementWindow, this.socket, this.oos, this.ois, mainWindow.getIndiceFactureSelectionne());
+        payementWindow.setController(controller);
+        payementWindow.setVisible(true);
 
         GetFactures();
         mainWindow.videTableArticle();
     }
+
+
 
     private void GetFactures()
     {
@@ -192,12 +164,29 @@ public class MainWindowController implements ActionListener, MouseListener {
     }
 
 
-    @Override
-    public void mousePressed(MouseEvent e) {}
-    @Override
-    public void mouseReleased(MouseEvent e) {}
-    @Override
-    public void mouseEntered(MouseEvent e) {}
-    @Override
-    public void mouseExited(MouseEvent e) {}
+    private void GetArticles()
+    {
+        int idFacture = mainWindow.getIdFacture();
+
+        RequeteGetArticles requete = new RequeteGetArticles(idFacture);
+
+        try {
+            oos.writeObject(requete);
+            ReponseGetArticles reponse = (ReponseGetArticles) ois.readObject();
+
+            mainWindow.videTableArticle();
+
+            while(reponse.getArticles().size() > 0)
+            {
+                mainWindow.ajouteArticleTable(reponse.getArticles().get(0).getIntitule(), reponse.getArticles().get(0).getPrixUnitaire(), reponse.getArticles().get(0).getQuantite());
+                reponse.getArticles().remove(0);
+            }
+
+        }
+        catch (IOException | ClassNotFoundException ex)
+        {
+            mainWindow.dialogueErreur("Erreur", "Erreur IO object requete Article" + ex.getMessage());
+        }
+    }
+
 }

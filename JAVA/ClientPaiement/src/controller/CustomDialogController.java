@@ -2,7 +2,7 @@ package controller;
 
 import VESPAP.ReponsePayFacture;
 import VESPAP.RequetePayFacture;
-import view.dialog.CustomDialog;
+import Vue.PayementWindow;
 
 import javax.swing.*;
 import java.awt.event.ActionEvent;
@@ -14,15 +14,15 @@ import java.net.Socket;
 
 public class CustomDialogController implements ActionListener {
 
-    private CustomDialog dialog;
+    private PayementWindow dialog;
     private Socket socket;
     private ObjectOutputStream oos;
     private ObjectInputStream ois;
     private String username;
-    private int cardnumber;
+    private String cardnumber;
     private int idFacture;
 
-    public CustomDialogController(CustomDialog dialog, Socket socket, ObjectOutputStream oos, ObjectInputStream ois, int idFacture )
+    public CustomDialogController(PayementWindow dialog, Socket socket, ObjectOutputStream oos, ObjectInputStream ois, int idFacture )
     {
         this.socket = socket;
         this.dialog = dialog;

@@ -5,8 +5,9 @@ import javax.swing.table.DefaultTableModel;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.*;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
-import Controleur.ControleurMainWindow;
 import controller.MainWindowController;
 
 public class MainWindow extends JFrame {
@@ -19,30 +20,25 @@ public class MainWindow extends JFrame {
     private JPanel MainPanel;
     private JPanel MagasinPanel;
     public JTextField idClientTextField;
-    private JTextField PrixUnitaireTextField;
-    private JTextField StockTextField;
-    private JSpinner QuantiteSpinner;
-    private JButton previousArticleButton;
-    private JButton nextArticleButton;
     private JPanel PublicitePanel;
     private JPanel PanierPanel;
-    private JTable table;
-    private JButton viderLePanierButton;
-    private JButton supprimerArticleButton;
+    private JTable JTableFactures;
+    private DefaultTableModel modelFactures;
+    private JTable JTableArticles;
+    private DefaultTableModel modelArticles;
     private JButton detailFactureButton;
-    private JTextField TotalTextField;
-    private JLabel imageLabel;
     private JButton payerButton;
     private JScrollPane JScrollFactures;
-    private JTextField idFacturetextField;
-    private JButton AfficherFacturesbutton;
+    private JTextField idFactureTextField;
+    private JButton afficherFacturesButton;
+    private JScrollPane JScrollArticles;
 
 
     public MainWindow() {
 
-        JFrame frame = new JFrame("Le Maraicher en ligne");
+        JFrame frame = new JFrame("Application de paiement");
         frame.setContentPane(MainPanel);
-        frame.setSize(new Dimension(770, 618));
+        frame.setSize(new Dimension(800, 700));
         frame.setVisible(true);
         frame.setResizable(false);
 
@@ -56,26 +52,32 @@ public class MainWindow extends JFrame {
             }
         });
 
-        DefaultTableModel model = new DefaultTableModel();
-        model.addColumn("Id");
-        model.addColumn("Article");
-        model.addColumn("Prix à l'unité");
-        model.addColumn("Quantité");
+        modelFactures = new DefaultTableModel();
+        modelFactures.addColumn("IdFacture");
+        modelFactures.addColumn("Date");
+        modelFactures.addColumn("Montant");
+        modelFactures.addColumn("Statue");
 
-        table = new JTable(model);
-        JScrollFactures.setViewportView(table);
+        JTableFactures = new JTable(modelFactures);
+        JScrollFactures.setViewportView(JTableFactures);
+
+        modelArticles = new DefaultTableModel();
+        modelArticles.addColumn("Article");
+        modelArticles.addColumn("Prix à l'unité");
+        modelArticles.addColumn("Quantité");
+
+        JTableArticles = new JTable(modelArticles);
+        JScrollArticles.setViewportView(JTableArticles);
     }
 
-    public void setController(MainWindowController controleurMainWindow)
+
+    public void setController(MainWindowController mainWindowController)
     {
-        loginButton.addActionListener(controleurMainWindow);
-        logoutButton.addActionListener(controleurMainWindow);
-        payerButton.addActionListener(controleurMainWindow);
-        previousArticleButton.addActionListener(controleurMainWindow);
-        nextArticleButton.addActionListener(controleurMainWindow);
-        supprimerArticleButton.addActionListener(controleurMainWindow);
-        viderLePanierButton.addActionListener(controleurMainWindow);
-        detailFactureButton.addActionListener(controleurMainWindow);
+        loginButton.addActionListener(mainWindowController);
+        logoutButton.addActionListener(mainWindowController);
+        payerButton.addActionListener(mainWindowController);
+        afficherFacturesButton.addActionListener(mainWindowController);
+        detailFactureButton.addActionListener(mainWindowController);
     }
 
     public void setNom(String nom)
@@ -98,59 +100,20 @@ public class MainWindow extends JFrame {
         return textFieldMdp.getText();
     }
 
-    public void setPrix(float prix)
+    public int getNumClient()
     {
-        if(prix >= 0)
-            PrixUnitaireTextField.setText(String.valueOf(prix));
-        else
-            PrixUnitaireTextField.setText("");
+        return Integer.parseInt(idClientTextField.getText());
     }
 
-    public void setStock(int stock)
+    public int getIdFacture()
     {
-        if(stock >= 0)
-            StockTextField.setText(String.valueOf(stock));
-        else
-            StockTextField.setText("");
+        return Integer.parseInt(idFactureTextField.getText());
     }
 
-    public int isNouveauClientChecked()
+    public boolean isNouveauEmployeChecked()
     {
-        if(nouveauEmployeCheckBox.isSelected())
-            return 1;
-        else
-            return 0;
-    }
+        return nouveauEmployeCheckBox.isSelected();
 
-    public void setArticle(String article, float prix, int stock, String image) {
-        idClientTextField.setText(article);
-        setPrix(prix);
-        setStock(stock);
-
-
-        // Load the image from the specified path
-        ImageIcon imageIcon = new ImageIcon("src/images/" + image);
-
-        // Create a JLabel to display the image
-        imageLabel.setIcon(imageIcon);
-    }
-
-    public void setQuantite(int quantite)
-    {
-        QuantiteSpinner.setValue(quantite);
-    }
-
-    public int getQuantite()
-    {
-        return (int) QuantiteSpinner.getValue();
-    }
-
-    public void setTotal(float total)
-    {
-        if(total >= 0)
-            TotalTextField.setText(String.format("%.2f", total)+"€");
-        else
-            TotalTextField.setText("");
     }
 
     public void LoginOK()
@@ -160,13 +123,11 @@ public class MainWindow extends JFrame {
         textFieldLogin.setEnabled(false);
         textFieldMdp.setEnabled(false);
         nouveauEmployeCheckBox.setEnabled(false);
+        idClientTextField.setEnabled(true);
+        afficherFacturesButton.setEnabled(true);
 
-        QuantiteSpinner.setEnabled(true);
-        previousArticleButton.setEnabled(true);
-        nextArticleButton.setEnabled(true);
         payerButton.setEnabled(true);
-        supprimerArticleButton.setEnabled(true);
-        viderLePanierButton.setEnabled(true);
+        idFactureTextField.setEnabled(true);
         detailFactureButton.setEnabled(true);
     }
 
@@ -177,58 +138,63 @@ public class MainWindow extends JFrame {
         textFieldLogin.setEnabled(true);
         textFieldMdp.setEnabled(true);
         nouveauEmployeCheckBox.setEnabled(true);
+        idClientTextField.setEnabled(false);
+        afficherFacturesButton.setEnabled(false);
 
-        QuantiteSpinner.setEnabled(false);
-        previousArticleButton.setEnabled(false);
-        nextArticleButton.setEnabled(false);
         payerButton.setEnabled(false);
-        supprimerArticleButton.setEnabled(false);
-        viderLePanierButton.setEnabled(false);
+        idFactureTextField.setEnabled(false);
         detailFactureButton.setEnabled(false);
-
-        setArticle("", -1, -1, "");
 
         setMotDePasse("");
         setNom("");
 
-        setQuantite(0);
-
         if(nouveauEmployeCheckBox.isSelected())
             nouveauEmployeCheckBox.setSelected(false);
 
-        videTablePanier();
-        setTotal(-1);
+        videTableFacture();
+        videTableArticle();
     }
 
-    public void ajouteArticleTablePanier(int id, String article, float prix, int quantite) {
+    public void ajouteFactureTable(int idFacture, Date date, float montant, boolean paye) {
 
-        DefaultTableModel model = (DefaultTableModel) table.getModel();
-        model.addRow(new Object[]{id, article, String.format("%.2f", prix)+"€", quantite});
+        SimpleDateFormat format = new SimpleDateFormat("dd/MM/yyyy"); // Spécifiez le format de la date
+        String dateEnString = format.format(date);
+
+        String p;
+        if(paye)
+            p = "Paye";
+        else
+            p = "Non-Paye";
+
+
+        DefaultTableModel model = (DefaultTableModel) JTableFactures.getModel();
+        model.addRow(new Object[]{idFacture, dateEnString, String.format("%.2f", montant)+"€",p});
     }
 
-    public void videTablePanier() {
-        DefaultTableModel model = (DefaultTableModel) table.getModel();
+    public void videTableFacture() {
+        DefaultTableModel model = (DefaultTableModel) JTableFactures.getModel();
         model.setRowCount(0);
     }
 
-    /*public int getIndiceArticleSelectionne()
+    public int getIndiceFactureSelectionne()
     {
-        return table.getSelectedRow();
-    }*/
-
-    public int getIdArticleSelectionne() {
-        int selectedRow = table.getSelectedRow();
-
-        if (selectedRow != -1) { // Vérifie que quelque chose est sélectionné
-            Object idArticleValue = table.getValueAt(selectedRow, 0);
-            if (idArticleValue instanceof Integer) {
-                return (int) idArticleValue;
-            }
-        }
-
-        // Valeur par défaut ou gestion d'erreur
-        return -1;
+        int selectedRow = JTableFactures.getSelectedRow();
+        return Integer.parseInt(modelFactures.getValueAt(selectedRow, 0).toString());
     }
+
+    public void ajouteArticleTable(String article, float prix, int quantite) {
+
+        DefaultTableModel model = (DefaultTableModel) JTableArticles.getModel();
+        model.addRow(new Object[]{article, String.format("%.2f", prix)+"€", quantite});
+    }
+
+
+
+    public void videTableArticle() {
+        DefaultTableModel model = (DefaultTableModel) JTableArticles.getModel();
+        model.setRowCount(0);
+    }
+
 
     public void dialogueMessage(String titre, String message) {
         JOptionPane.showMessageDialog(null, message, titre, JOptionPane.INFORMATION_MESSAGE);
@@ -237,5 +203,7 @@ public class MainWindow extends JFrame {
     public void dialogueErreur(String titre, String message) {
         JOptionPane.showMessageDialog(null, message, titre, JOptionPane.ERROR_MESSAGE);
     }
+
+
 
 }

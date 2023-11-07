@@ -1,8 +1,7 @@
 package ServeurGeneriqueTCP.Protocole;
 
-
-
 public class LuhnAlgorithm {
+
     public static boolean isValidLuhnNumber(String number) {
         // Supprimez les espaces et les caractères non numériques
         number = number.replaceAll("\\D", "");

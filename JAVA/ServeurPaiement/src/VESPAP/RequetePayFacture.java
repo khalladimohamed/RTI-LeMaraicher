@@ -4,9 +4,9 @@ public class RequetePayFacture implements Requete
 {
     private int idFacture;
     private String nom;
-    private int numeroCarte;
+    private String numeroCarte;
 
-    public RequetePayFacture(int id, String n, int numCarte)
+    public RequetePayFacture(int id, String n, String numCarte)
     {
         idFacture = id;
         nom = n;
@@ -21,7 +21,7 @@ public class RequetePayFacture implements Requete
         return nom;
     }
 
-    public int getNumeroCarte() {
+    public String getNumeroCarte() {
         return numeroCarte;
     }
 }

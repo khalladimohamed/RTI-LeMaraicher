@@ -6,6 +6,7 @@ import db.DatabaseUseCase;
 import model.Facture;
 import VESPAP.*;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 
 public class VESPAP implements Protocole {
@@ -25,6 +26,7 @@ public class VESPAP implements Protocole {
         return "VESPAP";
     }
 
+
     @Override
     public synchronized Reponse TraiteRequete(Requete requete) throws FinConnexionException {
 
@@ -42,6 +44,7 @@ public class VESPAP implements Protocole {
             return TraiteRequeteGetArticle((RequeteGetArticles)requete);
         return null;
     }
+
 
 
     private synchronized Reponse TraiteRequeteLogin(RequeteLogin requeteLogin) throws FinConnexionException
@@ -92,6 +95,8 @@ public class VESPAP implements Protocole {
         }
     }
 
+
+
     private synchronized Reponse TraiteRequeteGetFactures(RequeteGetFactures requete)
     {
         logger.Trace("RequeteGETFACTURES reçue de " + requete.getIdClient());
@@ -108,25 +113,32 @@ public class VESPAP implements Protocole {
 
     }
 
+
+
     private synchronized Reponse TraiteRequetePayFacture(RequetePayFacture requete)
     {
         logger.Trace("RequetePAYFACTURE reçue de " + requete.getNom());
 
-        /*try {
-            String message = databaseUseCase.payFacture(requete.getIdFacture(), requete.getNom(), requete.getNumeroCarte());
-            if(message.equals("OK"))
-                return new ReponsePayFacture(true, "PAYER");
-            else
-                return new ReponsePayFacture(false, message);
+        if(!databaseUseCase.isUsernameExists(requete.getNom()))
+            return new ReponsePayFacture(false, "Le client n'existe pas !");
+
+        if(!LuhnAlgorithm.isValidLuhnNumber(requete.getNumeroCarte()))
+            return new ReponsePayFacture(false, "Carte bancaire invalide");
+
+        String message = null;
+        try {
+            message = databaseUseCase.payFacture(requete.getIdFacture());
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
         }
-        catch (Exception e)
-        {
-            return new ReponsePayFacture(false, "Probleme BD");
-        }*/
 
-        //utiliser l'algo de lhun
-
+        if(message.equals("OK"))
+            return new ReponsePayFacture(true, "PAYER");
+        else
+            return new ReponsePayFacture(false, "Erreur paiement");
     }
+
+
 
     private synchronized void TraiteRequeteLogout(RequeteLogout requete) throws FinConnexionException
     {
@@ -135,7 +147,8 @@ public class VESPAP implements Protocole {
         throw new FinConnexionException(null);
     }
 
-    //Renomer en get detail facture
+
+
     private synchronized Reponse TraiteRequeteGetArticle(RequeteGetArticles requete)
     {
         logger.Trace("RequeteGETARTICLES reçue de " + requete.getIdFacture());

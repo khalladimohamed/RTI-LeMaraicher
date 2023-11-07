@@ -23,6 +23,13 @@ typedef struct
 typedef struct
 {
   int id;
+  char login[20];
+  char password[20];
+} EMPLOYE;
+
+typedef struct
+{
+  int id;
   int idClient;
   char date[20];
   float montant;
@@ -67,6 +74,11 @@ CLIENT Clients[] = {
     {2, "client2", "password2"},
 };
 
+EMPLOYE Employes[] = {
+    {1, "employe1", "password1"},
+    {2, "employe2", "password2"},
+};
+
 FACTURE Factures[] = {
     {1, 1, "2023-09-26", 20.5, 1},
     {2, 2, "2023-09-27", 30.0, 0},
@@ -95,6 +107,11 @@ int main(int argc,char *argv[])
   mysql_query(connexion, "drop table clients;"); // Au cas où elle existerait déjà
   mysql_query(connexion, "create table clients (id INT(4) auto_increment primary key, login varchar(20), password varchar(20));");
 
+  // Création de la table employes
+  printf("Création de la table employes...\n");
+  mysql_query(connexion, "drop table employes;"); // Au cas où elle existerait déjà
+  mysql_query(connexion, "create table employes (id INT(4) auto_increment primary key, login varchar(20), password varchar(20));");
+
   // Création de la table factures
   printf("Création de la table factures...\n");
   mysql_query(connexion, "drop table factures;"); // Au cas où elle existerait déjà
@@ -119,6 +136,14 @@ int main(int argc,char *argv[])
   for (int i = 0; i < sizeof(Clients) / sizeof(CLIENT); i++)
   {
     sprintf(requete, "insert into clients values (%d, '%s', '%s');", Clients[i].id, Clients[i].login, Clients[i].password);
+    mysql_query(connexion, requete);
+  }
+
+  // Ajout de tuples dans la table employes
+  printf("Ajout de employes...\n");
+  for (int i = 0; i < sizeof(Employes) / sizeof(EMPLOYE); i++)
+  {
+    sprintf(requete, "insert into employes values (%d, '%s', '%s');", Employes[i].id, Employes[i].login, Employes[i].password);
     mysql_query(connexion, requete);
   }
 
