@@ -8,7 +8,7 @@ import java.awt.*;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-import controller.MainWindowController;
+import Controleur.MainWindowController;
 
 public class MainWindow extends JFrame {
     private JTextField textFieldLogin;
@@ -164,11 +164,11 @@ public class MainWindow extends JFrame {
         if(paye)
             p = "Paye";
         else
-            p = "Non-Paye";
+            p = "Non Paye";
 
 
         DefaultTableModel model = (DefaultTableModel) JTableFactures.getModel();
-        model.addRow(new Object[]{idFacture, dateEnString, String.format("%.2f", montant)+"€",p});
+        model.addRow(new Object[]{idFacture, dateEnString, String.format("%.2f", montant),p});
     }
 
     public void videTableFacture() {
@@ -185,7 +185,7 @@ public class MainWindow extends JFrame {
     public void ajouteArticleTable(String article, float prix, int quantite) {
 
         DefaultTableModel model = (DefaultTableModel) JTableArticles.getModel();
-        model.addRow(new Object[]{article, String.format("%.2f", prix)+"€", quantite});
+        model.addRow(new Object[]{article, String.format("%.2f", prix), quantite});
     }
 
 

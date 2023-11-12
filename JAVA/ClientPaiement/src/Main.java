@@ -1,5 +1,5 @@
 import com.formdev.flatlaf.themes.FlatMacLightLaf;
-import controller.MainWindowController;
+import Controleur.MainWindowController;
 import Vue.MainWindow;
 
 import javax.swing.*;

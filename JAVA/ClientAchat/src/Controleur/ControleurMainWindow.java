@@ -22,7 +22,6 @@ public class ControleurMainWindow implements ActionListener {
     @Override
     public void actionPerformed(ActionEvent e) {
         JButton source = (JButton) e.getSource();
-        boolean boucle = true;
 
         if(source.getText().equals("Login"))
         {
@@ -84,13 +83,21 @@ public class ControleurMainWindow implements ActionListener {
 
         else if(source.getText().equals(">>>"))
         {
-            CurrentIdArticle = (CurrentIdArticle+1)%21;
+            if (CurrentIdArticle < 20) {
+                CurrentIdArticle++;
+            } else {
+                CurrentIdArticle = 0;
+            }
             Consult(CurrentIdArticle);
         }
 
         else if(source.getText().equals("<<<"))
         {
-            CurrentIdArticle = (CurrentIdArticle+20)%21;
+            if (CurrentIdArticle > 0) {
+                CurrentIdArticle--;
+            } else {
+                CurrentIdArticle = 20;
+            }
             Consult(CurrentIdArticle);
         }
 

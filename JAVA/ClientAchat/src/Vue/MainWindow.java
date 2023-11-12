@@ -145,7 +145,7 @@ public class MainWindow extends JFrame {
     public void setTotal(float total)
     {
         if(total >= 0)
-            TotalTextField.setText(String.format("%.2f", total)+"€");
+            TotalTextField.setText(String.format("%.2f", total));
         else
             TotalTextField.setText("");
     }

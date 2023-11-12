@@ -1,6 +1,6 @@
 package Vue;
 
-import controller.CustomDialogController;
+import Controleur.PayementWindowController;
 
 import javax.swing.*;
 
@@ -35,7 +35,7 @@ public class PayementWindow extends JDialog {
 
 
 
-    public void setController(CustomDialogController controller)
+    public void setController(PayementWindowController controller)
     {
         confirmerButton.addActionListener(controller);
         annulerButton.addActionListener(controller);

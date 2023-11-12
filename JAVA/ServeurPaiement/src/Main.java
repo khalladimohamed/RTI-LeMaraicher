@@ -1,16 +1,17 @@
-import ServeurGeneriqueTCP.Logger.MonLogger;
-import ServeurGeneriqueTCP.ThreadServeurPool;
-import ServeurGeneriqueTCP.Protocole.VESPAP;
-import db.DatabaseConnection;
-import db.DatabaseUseCase;
+import Serveur.Logger.MonLogger;
+import Serveur.ThreadServeurPool;
+import Serveur.Protocole.VESPAP;
+import JDBC.BeanGenerique;
+import JDBC.BeanMetier;
 
 import java.sql.*;
+
 
 public class Main {
     public static void main(String[] args) {
 
         try {
-            DatabaseConnection databaseConnection = new DatabaseConnection(DatabaseConnection.MYSQL, "192.168.109.130", "PourStudent", "Student", "PassStudent1_");
+            BeanGenerique beanGenerique = new BeanGenerique(BeanGenerique.MYSQL, "192.168.109.130", "PourStudent", "Student", "PassStudent1_");
         }
         catch (ClassNotFoundException | SQLException e)
         {
@@ -20,8 +21,8 @@ public class Main {
 
         MonLogger logger = new MonLogger();
 
-        DatabaseUseCase databaseUseCase = new DatabaseUseCase(logger);
-        VESPAP vespap = new VESPAP(logger,databaseUseCase);
+        BeanMetier beanMetier = new BeanMetier(logger);
+        VESPAP vespap = new VESPAP(logger, beanMetier);
 
         try {
             ThreadServeurPool threadServeurPool = new ThreadServeurPool(6666, vespap, 5, logger);
