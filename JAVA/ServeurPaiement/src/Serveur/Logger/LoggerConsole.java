@@ -1,8 +1,8 @@
 package Serveur.Logger;
 
-public class MonLogger implements Logger {
+public class LoggerConsole implements Logger {
 
-    public MonLogger()
+    public LoggerConsole()
     {
 
     }

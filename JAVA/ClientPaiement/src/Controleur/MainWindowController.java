@@ -24,8 +24,6 @@ public class MainWindowController implements ActionListener{
     private ObjectOutputStream oos;
     private ObjectInputStream ois;
 
-    private int CurrentIdArticle = 0;
-
     public MainWindowController(MainWindow mainWindow)
     {
         this.mainWindow = mainWindow;
@@ -75,7 +73,7 @@ public class MainWindowController implements ActionListener{
 
         try
         {
-            socket = new Socket("localhost",6666);
+            socket = new Socket("localhost",51000);
             RequeteLogin requete = new RequeteLogin(login,password,isNew);
             oos = new ObjectOutputStream(socket.getOutputStream());
             ois = new ObjectInputStream(socket.getInputStream());
