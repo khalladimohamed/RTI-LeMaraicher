@@ -24,7 +24,7 @@ public class VESPAP implements Protocole {
 
     @Override
     public String getNom() {
-        return "ObjetsVESPAP";
+        return "VESPAP";
     }
 
 

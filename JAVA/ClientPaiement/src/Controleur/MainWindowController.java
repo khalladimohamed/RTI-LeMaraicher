@@ -120,7 +120,7 @@ public class MainWindowController implements ActionListener{
 
 
 
-    private void Payer()
+    /*private void Payer()
     {
         FlatMacLightLaf.setup();
 
@@ -138,6 +138,37 @@ public class MainWindowController implements ActionListener{
 
         GetFactures();
         mainWindow.videTableArticle();
+    }*/
+
+
+
+    private void Payer()
+    {
+        int indice = mainWindow.getIndiceFactureSelectionne();
+        if(indice != -1)
+        {
+            FlatMacLightLaf.setup();
+
+            // Affichage de la fenêtre
+            try {
+                UIManager.setLookAndFeel(new FlatMacLightLaf());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            PayementWindow payementWindow = new PayementWindow(mainWindow, "Payement");
+            PayementWindowController controller = new PayementWindowController(payementWindow, this.socket, this.oos, this.ois, indice);
+            payementWindow.setController(controller);
+            payementWindow.setVisible(true);
+
+            GetFactures();
+            mainWindow.videTableArticle();
+        }
+        else
+        {
+            mainWindow.dialogueErreur("Erreur", "La facture est deja paye !");
+        }
+
     }
 
 
@@ -152,7 +183,7 @@ public class MainWindowController implements ActionListener{
 
             mainWindow.videTableFacture();
             for (Facture fact : reponse.getTableauFactures()) {
-                if(!fact.getPaye())
+                //if(!fact.getPaye())
                     mainWindow.ajouteFactureTable(fact.getIdFacture(), fact.getDate(), fact.getMontant(), fact.getPaye());
             }
 

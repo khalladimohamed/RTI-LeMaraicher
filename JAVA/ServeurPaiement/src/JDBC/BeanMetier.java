@@ -39,7 +39,6 @@ public class BeanMetier {
 
             return false;
         }
-
         catch (SQLException e)
         {
             e.printStackTrace();
@@ -77,8 +76,6 @@ public class BeanMetier {
 
     public synchronized boolean addEmploye(String username, String password)
     {
-        System.out.println("addEmploye");
-
         String query = "INSERT INTO employes (login, password) VALUES ('" + username + "', '" + password + "')";
 
         try

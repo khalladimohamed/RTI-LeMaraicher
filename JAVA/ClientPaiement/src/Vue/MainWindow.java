@@ -176,10 +176,19 @@ public class MainWindow extends JFrame {
         model.setRowCount(0);
     }
 
-    public int getIndiceFactureSelectionne()
+    /*public int getIndiceFactureSelectionne()
     {
         int selectedRow = JTableFactures.getSelectedRow();
         return Integer.parseInt(modelFactures.getValueAt(selectedRow, 0).toString());
+    }*/
+
+    public int getIndiceFactureSelectionne()
+    {
+        int selectedRow = JTableFactures.getSelectedRow();
+        if(modelFactures.getValueAt(selectedRow, 3).toString().equals("Non Paye"))
+            return Integer.parseInt(modelFactures.getValueAt(selectedRow, 0).toString());
+        else
+            return -1;
     }
 
     public void ajouteArticleTable(String article, float prix, int quantite) {

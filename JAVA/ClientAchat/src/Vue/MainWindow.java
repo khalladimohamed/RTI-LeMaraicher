@@ -200,7 +200,7 @@ public class MainWindow extends JFrame {
     public void ajouteArticleTablePanier(int id, String article, float prix, int quantite) {
 
         DefaultTableModel model = (DefaultTableModel) table.getModel();
-        model.addRow(new Object[]{id, article, String.format("%.2f", prix)+"€", quantite});
+        model.addRow(new Object[]{id, article, String.format("%.2f", prix), quantite});
     }
 
     public void videTablePanier() {
