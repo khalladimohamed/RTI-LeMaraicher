@@ -73,7 +73,7 @@ public class BeanMetier {
     }
 
     public synchronized String getPassword(String username)  {
-        String query = "SELECT * FROM employes WHERE login = '" + username + "'";
+        String query = "SELECT * FROM clients WHERE login = '" + username + "'";
 
         try {
             ResultSet resultSet = BeanGenerique.executeQuery(query);

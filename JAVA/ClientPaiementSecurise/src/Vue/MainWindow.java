@@ -15,7 +15,6 @@ public class MainWindow extends JFrame {
     private JTextField textFieldMdp;
     private JButton loginButton;
     private JButton logoutButton;
-    private JCheckBox nouveauEmployeCheckBox;
     private JPanel ConnexionPanel;
     private JPanel MainPanel;
     private JPanel MagasinPanel;
@@ -110,11 +109,6 @@ public class MainWindow extends JFrame {
         return Integer.parseInt(idFactureTextField.getText());
     }
 
-    public boolean isNouveauEmployeChecked()
-    {
-        return nouveauEmployeCheckBox.isSelected();
-
-    }
 
     public void LoginOK()
     {
@@ -122,7 +116,6 @@ public class MainWindow extends JFrame {
         logoutButton.setEnabled(true);
         textFieldLogin.setEnabled(false);
         textFieldMdp.setEnabled(false);
-        nouveauEmployeCheckBox.setEnabled(false);
         idClientTextField.setEnabled(true);
         afficherFacturesButton.setEnabled(true);
 
@@ -137,7 +130,6 @@ public class MainWindow extends JFrame {
         logoutButton.setEnabled(false);
         textFieldLogin.setEnabled(true);
         textFieldMdp.setEnabled(true);
-        nouveauEmployeCheckBox.setEnabled(true);
         idClientTextField.setEnabled(false);
         afficherFacturesButton.setEnabled(false);
 
@@ -147,9 +139,6 @@ public class MainWindow extends JFrame {
 
         setMotDePasse("");
         setNom("");
-
-        if(nouveauEmployeCheckBox.isSelected())
-            nouveauEmployeCheckBox.setSelected(false);
 
         videTableFacture();
         videTableArticle();
@@ -175,12 +164,6 @@ public class MainWindow extends JFrame {
         DefaultTableModel model = (DefaultTableModel) JTableFactures.getModel();
         model.setRowCount(0);
     }
-
-    /*public int getIndiceFactureSelectionne()
-    {
-        int selectedRow = JTableFactures.getSelectedRow();
-        return Integer.parseInt(modelFactures.getValueAt(selectedRow, 0).toString());
-    }*/
 
     public int getIndiceFactureSelectionne()
     {

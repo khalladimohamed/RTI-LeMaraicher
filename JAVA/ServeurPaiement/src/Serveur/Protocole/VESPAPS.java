@@ -78,7 +78,7 @@ public class VESPAPS implements Protocole {
 
             if(valide)
             {
-                logger.Trace("OK:ReponseLogin envois");
+                logger.Trace("OK: ReponseLogin envois");
 
                 KeyGenerator cleGen = KeyGenerator.getInstance("DES","BC");
                 cleGen.init(new SecureRandom());
