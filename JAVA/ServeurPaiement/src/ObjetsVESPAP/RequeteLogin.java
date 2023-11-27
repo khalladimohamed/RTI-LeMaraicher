@@ -1,5 +1,7 @@
 package ObjetsVESPAP;
 
+import RequeteReponse.Requete;
+
 public class RequeteLogin implements Requete
 {
     private String login;

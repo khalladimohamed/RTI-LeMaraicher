@@ -1,6 +1,6 @@
 package Serveur.Exception;
 
-import ObjetsVESPAP.Reponse;
+import RequeteReponse.Reponse;
 
 public class FinConnexionException extends Exception
 {

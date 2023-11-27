@@ -5,7 +5,6 @@ import Serveur.Protocole.Protocole;
 
 import java.io.IOException;
 
-
 public class ThreadClientPool extends ThreadClient
 {
     private FileAttente connexionsEnAttente;

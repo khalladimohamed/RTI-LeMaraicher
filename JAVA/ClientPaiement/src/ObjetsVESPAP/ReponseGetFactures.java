@@ -1,6 +1,7 @@
 package ObjetsVESPAP;
 
 import Modele.Facture;
+import RequeteReponse.Reponse;
 
 import java.util.ArrayList;
 

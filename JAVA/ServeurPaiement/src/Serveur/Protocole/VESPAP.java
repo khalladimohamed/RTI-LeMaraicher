@@ -1,5 +1,7 @@
 package Serveur.Protocole;
 
+import RequeteReponse.Reponse;
+import RequeteReponse.Requete;
 import Serveur.Exception.FinConnexionException;
 import Serveur.Logger.Logger;
 import JDBC.BeanMetier;

@@ -1,5 +1,7 @@
 package ObjetsVESPAP;
 
+import RequeteReponse.Requete;
+
 public class RequeteGetFactures implements Requete {
     private int idClient;
 

@@ -72,7 +72,28 @@ public class BeanMetier {
 
     }
 
+    public synchronized String getPassword(String username)  {
+        String query = "SELECT * FROM employes WHERE login = '" + username + "'";
 
+        try {
+            ResultSet resultSet = BeanGenerique.executeQuery(query);
+
+            if (resultSet.next()) {
+                String passwordDB = resultSet.getString("password");
+
+                return passwordDB;
+            }
+
+            return "";
+        }
+
+        catch (SQLException e)
+        {
+            e.printStackTrace();
+            System.exit(1);
+            return "";
+        }
+    }
 
     public synchronized boolean addEmploye(String username, String password)
     {

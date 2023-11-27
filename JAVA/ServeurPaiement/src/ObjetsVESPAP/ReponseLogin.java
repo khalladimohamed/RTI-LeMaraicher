@@ -1,5 +1,7 @@
 package ObjetsVESPAP;
 
+import RequeteReponse.Reponse;
+
 public class ReponseLogin implements Reponse
 {
     private boolean valide;
