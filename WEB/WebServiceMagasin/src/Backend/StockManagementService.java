@@ -65,11 +65,7 @@ public class StockManagementService {
             String method = exchange.getRequestMethod();
 
             if (method.equals("GET")) {
-                if (exchange.getRequestURI().getPath().startsWith("/api/details/")) {
-                    handleDetailsRequest(exchange);
-                } else {
-                    handleGetRequest(exchange);
-                }
+                handleGetRequest(exchange);
             } else if (method.equals("POST")) {
                 handlePostRequest(exchange);
             }
@@ -93,27 +89,6 @@ public class StockManagementService {
             }
         }
 
-        private void handleDetailsRequest(HttpExchange exchange) throws IOException {
-            try {
-                String[] pathSegments = exchange.getRequestURI().getPath().split("/");
-                int articleId = Integer.parseInt(pathSegments[pathSegments.length - 1]);
-
-                ResultSet resultSet = beanMetier.getArticleDetails(articleId);
-                String jsonResponse = convertResultSetToJson(resultSet);
-                System.out.println(jsonResponse);
-
-                byte[] responseBytes = jsonResponse.getBytes("UTF-8");
-
-                exchange.sendResponseHeaders(200, responseBytes.length);
-                OutputStream os = exchange.getResponseBody();
-                os.write(jsonResponse.getBytes());
-                os.close();
-            } catch (NumberFormatException | SQLException e) {
-                e.printStackTrace();
-                exchange.sendResponseHeaders(500, -1); // Internal Server Error
-            }
-        }
-
         private void handlePostRequest(HttpExchange exchange) throws IOException {
             try {
                 InputStreamReader isr = new InputStreamReader(exchange.getRequestBody(), "utf-8");
@@ -121,8 +96,8 @@ public class StockManagementService {
                 String postData = br.readLine();
 
                 boolean updateSuccessful = updateArticle(postData);
-
                 String response = updateSuccessful ? "Oui" : "Non";
+
                 exchange.sendResponseHeaders(200, response.length());
                 OutputStream os = exchange.getResponseBody();
                 os.write(response.getBytes());
@@ -134,13 +109,41 @@ public class StockManagementService {
         }
 
         private boolean updateArticle(String postData) throws SQLException {
-            String[] params = postData.split(",");
-            int idArticle = Integer.parseInt(params[0]);
-            float prix = Float.parseFloat(params[1]);
-            int stock = Integer.parseInt(params[2]);
+            // Divisez les paramètres basés sur le caractère '&'
+            String[] params = postData.split("&");
 
+            // Initialisez les variables
+            int idArticle = 0;
+            float prix = 0;
+            int stock = 0;
+
+            // Parcourez les paramètres pour extraire les valeurs
+            for (String param : params) {
+                String[] keyValue = param.split("=");
+                if (keyValue.length == 2) {
+                    String key = keyValue[0];
+                    String value = keyValue[1];
+
+                    // Assurez-vous de traiter correctement chaque clé et valeur
+                    switch (key) {
+                        case "idArticle":
+                            idArticle = Integer.parseInt(value);
+                            break;
+                        case "prix":
+                            prix = Float.parseFloat(value);
+                            break;
+                        case "stock":
+                            stock = Integer.parseInt(value);
+                            break;
+                        // Ajoutez d'autres cas si nécessaire
+                    }
+                }
+            }
+
+            // Appelez la méthode de mise à jour avec les valeurs extraites
             return beanMetier.updateArticle(idArticle, prix, stock);
         }
+
 
         private String convertResultSetToJson(ResultSet resultSet) throws SQLException {
             StringBuilder json = new StringBuilder("[");
