@@ -63,7 +63,10 @@ public class VESPAPS implements Protocole {
             boolean valide = false;
             String message = "Null";
             String motDePasse = "";
+            int idClient = beanMetier.getIdClient(requeteLogin.getLogin());
             motDePasse = beanMetier.getPassword(requeteLogin.getLogin());
+
+
 
             if(motDePasse.equals("")) {
                 message = "Utilisateur inexistant";
@@ -84,12 +87,12 @@ public class VESPAPS implements Protocole {
                 cleGen.init(new SecureRandom());
                 cleSession = cleGen.generateKey();
 
-                ReponseLogin reponseLogin = new ReponseLogin(message, valide, cleSession, RecupereClePubliqueClient());
+                ReponseLogin reponseLogin = new ReponseLogin(idClient, message, valide, cleSession, RecupereClePubliqueClient());
                 return reponseLogin;
             }
 
 
-            ReponseLogin reponseLogin = new ReponseLogin(message, valide, null, RecupereClePubliqueClient());
+            ReponseLogin reponseLogin = new ReponseLogin(idClient, message, valide, null, RecupereClePubliqueClient());
             throw new FinConnexionException(reponseLogin);
 
         } catch (NoSuchAlgorithmException | IOException | NoSuchProviderException | NoSuchPaddingException |

@@ -33,12 +33,14 @@ public class MainWindowController implements ActionListener{
     private ObjectOutputStream oos;
     private ObjectInputStream ois;
     private SecretKey cleSession;
+    private int idClientCourrant;
 
     public MainWindowController(MainWindow mainWindow)
     {
         this.mainWindow = mainWindow;
         oos = null;
         ois = null;
+        idClientCourrant = -1;
         Security.addProvider(new BouncyCastleProvider());
     }
 
@@ -71,10 +73,6 @@ public class MainWindowController implements ActionListener{
             else if(source.getText().equals("Payer"))
             {
                 Payer();
-            }
-            else if (source.getText().equals("Afficher les factures"))
-            {
-                GetFactures();
             }
             else if (source.getText().equals("Recuperer le detail de la facture"))
             {
@@ -109,11 +107,13 @@ public class MainWindowController implements ActionListener{
 
             String message = reponse.getMessage(clePrivee);
             boolean valide = reponse.getValide(clePrivee);
+            idClientCourrant = reponse.getIdClient(clePrivee);
 
             if (valide)
             {
                 cleSession = reponse.getCleSession(clePrivee);
                 mainWindow.LoginOK();
+                GetFactures();
                 mainWindow.dialogueMessage("LOGIN", message);
             }
             else
@@ -188,7 +188,7 @@ public class MainWindowController implements ActionListener{
     {
         try
         {
-            RequeteGetFactures requete = new RequeteGetFactures(mainWindow.getNumClient(), RecupereClePriveeClient());
+            RequeteGetFactures requete = new RequeteGetFactures(idClientCourrant, RecupereClePriveeClient());
             oos.writeObject(requete);
             ReponseGetFactures reponse = (ReponseGetFactures) ois.readObject();
 

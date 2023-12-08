@@ -18,7 +18,6 @@ public class MainWindow extends JFrame {
     private JPanel ConnexionPanel;
     private JPanel MainPanel;
     private JPanel MagasinPanel;
-    public JTextField idClientTextField;
     private JPanel PublicitePanel;
     private JPanel PanierPanel;
     private JTable JTableFactures;
@@ -29,7 +28,6 @@ public class MainWindow extends JFrame {
     private JButton payerButton;
     private JScrollPane JScrollFactures;
     private JTextField idFactureTextField;
-    private JButton afficherFacturesButton;
     private JScrollPane JScrollArticles;
 
 
@@ -75,7 +73,6 @@ public class MainWindow extends JFrame {
         loginButton.addActionListener(mainWindowController);
         logoutButton.addActionListener(mainWindowController);
         payerButton.addActionListener(mainWindowController);
-        afficherFacturesButton.addActionListener(mainWindowController);
         detailFactureButton.addActionListener(mainWindowController);
     }
 
@@ -99,11 +96,6 @@ public class MainWindow extends JFrame {
         return textFieldMdp.getText();
     }
 
-    public int getNumClient()
-    {
-        return Integer.parseInt(idClientTextField.getText());
-    }
-
     public int getIdFacture()
     {
         return Integer.parseInt(idFactureTextField.getText());
@@ -116,8 +108,6 @@ public class MainWindow extends JFrame {
         logoutButton.setEnabled(true);
         textFieldLogin.setEnabled(false);
         textFieldMdp.setEnabled(false);
-        idClientTextField.setEnabled(true);
-        afficherFacturesButton.setEnabled(true);
 
         payerButton.setEnabled(true);
         idFactureTextField.setEnabled(true);
@@ -130,8 +120,6 @@ public class MainWindow extends JFrame {
         logoutButton.setEnabled(false);
         textFieldLogin.setEnabled(true);
         textFieldMdp.setEnabled(true);
-        idClientTextField.setEnabled(false);
-        afficherFacturesButton.setEnabled(false);
 
         payerButton.setEnabled(false);
         idFactureTextField.setEnabled(false);

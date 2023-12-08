@@ -86,12 +86,33 @@ public class BeanMetier {
 
             return "";
         }
-
         catch (SQLException e)
         {
             e.printStackTrace();
             System.exit(1);
             return "";
+        }
+    }
+
+    public synchronized int getIdClient(String username)  {
+        String query = "SELECT * FROM clients WHERE login = '" + username + "'";
+
+        try {
+            ResultSet resultSet = BeanGenerique.executeQuery(query);
+
+            if (resultSet.next()) {
+                int idClient = resultSet.getInt("id");
+
+                return idClient;
+            }
+
+            return -1;
+        }
+        catch (SQLException e)
+        {
+            e.printStackTrace();
+            System.exit(1);
+            return -1;
         }
     }
 
