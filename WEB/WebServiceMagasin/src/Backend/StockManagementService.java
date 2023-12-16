@@ -3,6 +3,10 @@ package Backend;
 import Backend.JDBC.BeanGenerique;
 import Backend.JDBC.BeanMetier;
 import Backend.Logger.LoggerConsole;
+import Backend.StaticHandlers.HandlerCss;
+import Backend.StaticHandlers.HandlerHtml;
+import Backend.StaticHandlers.HandlerImages;
+import Backend.StaticHandlers.HandlerJavascript;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
@@ -15,6 +19,7 @@ import java.net.InetSocketAddress;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+
 public class StockManagementService {
 
     public static void main(String[] args) throws IOException {
@@ -23,8 +28,10 @@ public class StockManagementService {
         try {
             serveur = HttpServer.create(new InetSocketAddress(8080), 0);
 
-            // Ajout du gestionnaire statique
-            serveur.createContext("/", new StaticHandler());
+            serveur.createContext("/", new HandlerHtml());
+            serveur.createContext("/css", new HandlerCss());
+            serveur.createContext("/js", new HandlerJavascript());
+            serveur.createContext("/images", new HandlerImages());
 
             serveur.createContext("/api", new StockHandler());
 
@@ -50,7 +57,6 @@ public class StockManagementService {
         }
 
         LoggerConsole logger = new LoggerConsole();
-
         BeanMetier beanMetier = new BeanMetier(logger);
 
 
@@ -61,7 +67,6 @@ public class StockManagementService {
             exchange.getResponseHeaders().set("Access-Control-Allow-Headers", "Content-Type");
             exchange.getResponseHeaders().set("Access-Control-Allow-Credentials", "true");
 
-
             String method = exchange.getRequestMethod();
 
             if (method.equals("GET")) {
@@ -71,12 +76,12 @@ public class StockManagementService {
             }
         }
 
+
         private void handleGetRequest(HttpExchange exchange) throws IOException {
             try {
                 ResultSet resultSet = beanMetier.getAllArticles();
                 String jsonResponse = convertResultSetToJson(resultSet);
 
-                // Utilisez getBytes("UTF-8").length pour obtenir la longueur correcte en octets
                 byte[] responseBytes = jsonResponse.getBytes("UTF-8");
 
                 exchange.sendResponseHeaders(200, responseBytes.length);
@@ -85,9 +90,10 @@ public class StockManagementService {
                 os.close();
             } catch (SQLException e) {
                 e.printStackTrace();
-                exchange.sendResponseHeaders(500, -1); // Internal Server Error
+                exchange.sendResponseHeaders(500, -1);
             }
         }
+
 
         private void handlePostRequest(HttpExchange exchange) throws IOException {
             try {
@@ -104,27 +110,26 @@ public class StockManagementService {
                 os.close();
             } catch (SQLException e) {
                 e.printStackTrace();
-                exchange.sendResponseHeaders(500, -1); // Internal Server Error
+                exchange.sendResponseHeaders(500, -1);
             }
         }
 
+
         private boolean updateArticle(String postData) throws SQLException {
-            // Divisez les paramètres basés sur le caractère '&'
+            // Diviser les paramètres basés sur le caractère '&'
             String[] params = postData.split("&");
 
-            // Initialisez les variables
             int idArticle = 0;
             float prix = 0;
             int stock = 0;
 
-            // Parcourez les paramètres pour extraire les valeurs
+            // Parcourir les paramètres pour extraire les valeurs
             for (String param : params) {
                 String[] keyValue = param.split("=");
                 if (keyValue.length == 2) {
                     String key = keyValue[0];
                     String value = keyValue[1];
 
-                    // Assurez-vous de traiter correctement chaque clé et valeur
                     switch (key) {
                         case "idArticle":
                             idArticle = Integer.parseInt(value);
@@ -135,12 +140,10 @@ public class StockManagementService {
                         case "stock":
                             stock = Integer.parseInt(value);
                             break;
-                        // Ajoutez d'autres cas si nécessaire
                     }
                 }
             }
 
-            // Appelez la méthode de mise à jour avec les valeurs extraites
             return beanMetier.updateArticle(idArticle, prix, stock);
         }
 

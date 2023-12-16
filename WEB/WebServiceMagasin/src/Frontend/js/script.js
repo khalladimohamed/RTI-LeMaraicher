@@ -1,10 +1,12 @@
 var selectedArticleId = null;
-var articles = []; // Tableau pour stocker localement la liste des articles
+var articles = [];
+
 
 document.addEventListener("DOMContentLoaded", function () {
     loadArticles();
     clearDetails();
 });
+
 
 function loadArticles() {
     var xhr = new XMLHttpRequest();
@@ -41,6 +43,7 @@ function loadArticles() {
     xhr.send();
 }
 
+
 function showDetails(articleId) {
     selectedArticleId = articleId;
 
@@ -56,6 +59,7 @@ function showDetails(articleId) {
     }
 }
 
+
 function displayArticleDetails(articleDetails) {
     document.getElementById("selectedItem").innerHTML =
         "<h3>Article sélectionné</h3>" +
@@ -63,11 +67,12 @@ function displayArticleDetails(articleDetails) {
         "<p>Intitulé: " + articleDetails.intitule + "</p>" +
         "<p>Prix: " + articleDetails.prix + "</p>" +
         "<p>Stock: " + articleDetails.stock + "</p>" +
-        "<img src='images/" + articleDetails.image + "' alt='Image de l'article'>";
+        "<img src=images/" + articleDetails.image + " alt='Image non disponible'>";
 
     document.getElementById("priceInput").value = articleDetails.prix;
     document.getElementById("stockInput").value = articleDetails.stock;
 }
+
 
 function updateStock() {
     if (selectedArticleId === null) {
