@@ -34,7 +34,7 @@ public class ReponsePayFacture implements Reponse {
     }
 
     public boolean VerifyAuthenticity(SecretKey cleSession) throws NoSuchAlgorithmException, NoSuchProviderException, InvalidKeyException, IOException {
-// Construction du HMAC local
+        // Construction du HMAC local
         Mac hm = Mac.getInstance("HMAC-MD5","BC");
         hm.init(cleSession);
         ByteArrayOutputStream baos = new ByteArrayOutputStream();

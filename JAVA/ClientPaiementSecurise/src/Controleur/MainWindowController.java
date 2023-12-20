@@ -153,37 +153,6 @@ public class MainWindowController implements ActionListener{
 
 
 
-    private void Payer()
-    {
-        int indice = mainWindow.getIndiceFactureSelectionne();
-        if(indice != -1)
-        {
-            FlatMacLightLaf.setup();
-
-            // Affichage de la fenêtre
-            try {
-                UIManager.setLookAndFeel(new FlatMacLightLaf());
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-
-            PayementWindow payementWindow = new PayementWindow(mainWindow, "Payement");
-            PayementWindowController controller = new PayementWindowController(payementWindow, this.socket, this.oos, this.ois, indice, cleSession);
-            payementWindow.setController(controller);
-            payementWindow.setVisible(true);
-
-            GetFactures();
-            mainWindow.videTableArticle();
-        }
-        else
-        {
-            mainWindow.dialogueErreur("Erreur", "La facture est deja paye !");
-        }
-
-    }
-
-
-
     private void GetFactures()
     {
         try
@@ -208,6 +177,7 @@ public class MainWindowController implements ActionListener{
             mainWindow.dialogueErreur("Erreur", "Problème de connexion " + ex.getMessage());
         }
     }
+
 
 
     private void GetArticles()
@@ -241,11 +211,41 @@ public class MainWindowController implements ActionListener{
 
 
 
+    private void Payer()
+    {
+        int indice = mainWindow.getIndiceFactureSelectionne();
+        if(indice != -1)
+        {
+            FlatMacLightLaf.setup();
+
+            // Affichage de la fenêtre
+            try {
+                UIManager.setLookAndFeel(new FlatMacLightLaf());
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+            PayementWindow payementWindow = new PayementWindow(mainWindow, "Payement");
+            PayementWindowController controller = new PayementWindowController(payementWindow, this.socket, this.oos, this.ois, indice, cleSession);
+            payementWindow.setController(controller);
+            payementWindow.setVisible(true);
+
+            GetFactures();
+            mainWindow.videTableArticle();
+        }
+        else
+        {
+            mainWindow.dialogueErreur("Erreur", "La facture est deja paye !");
+        }
+
+    }
+
+
+
     public static PrivateKey RecupereClePriveeClient() throws KeyStoreException, IOException, UnrecoverableKeyException, NoSuchAlgorithmException, CertificateException {
         KeyStore ks = KeyStore.getInstance("JKS");
         ks.load(new FileInputStream("KeyStoreClient.jks"),"rti2023".toCharArray());
         PrivateKey cle = (PrivateKey) ks.getKey("cleclient","cleclient".toCharArray());
         return cle;
     }
-
 }

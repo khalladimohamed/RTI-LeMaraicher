@@ -61,13 +61,14 @@ public class PayementWindowController implements ActionListener {
                 ReponsePayFacture reponse = (ReponsePayFacture) ois.readObject();
 
                 if(!reponse.VerifyAuthenticity(cleSession))
-                    dialog.dialogueErreur("PAYER", "Error VerifyAuthenticity()");
+                    dialog.dialogueErreur("Payement", "Erreur : VerifyAuthenticity()");
+
                 if (reponse.isValide()) {
-                    dialog.dialogueMessage("PAYER", reponse.getMessage());
+                    dialog.dialogueMessage("Payement", reponse.getMessage());
                     dialog.setVisible(false);
 
                 } else {
-                    dialog.dialogueErreur("PAYER", reponse.getMessage());
+                    dialog.dialogueErreur("Payement", reponse.getMessage());
                 }
             }
             catch (IOException | ClassNotFoundException | NoSuchPaddingException | IllegalBlockSizeException |

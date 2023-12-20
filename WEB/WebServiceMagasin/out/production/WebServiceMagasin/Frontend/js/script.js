@@ -91,7 +91,7 @@ function updateStock() {
         if (xhr.readyState == 4) {
             if (xhr.status == 200) {
                 alert("Mise à jour réussie!");
-                // Mettez à jour la table ou effectuez d'autres actions nécessaires
+
                 loadArticles();
                 clearDetails();
             } else {

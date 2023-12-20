@@ -42,6 +42,7 @@ public class StockManagementService {
         }
     }
 
+
     static class StockHandler implements HttpHandler {
 
         BeanGenerique beanGenerique;
@@ -62,16 +63,14 @@ public class StockManagementService {
 
         @Override
         public void handle(HttpExchange exchange) throws IOException {
-            exchange.getResponseHeaders().set("Access-Control-Allow-Origin", "*");
-            exchange.getResponseHeaders().set("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
-            exchange.getResponseHeaders().set("Access-Control-Allow-Headers", "Content-Type");
-            exchange.getResponseHeaders().set("Access-Control-Allow-Credentials", "true");
 
             String method = exchange.getRequestMethod();
 
             if (method.equals("GET")) {
+                System.out.println("--- Requête GET reçue (obtenir les articles) ---");
                 handleGetRequest(exchange);
             } else if (method.equals("POST")) {
+                System.out.println("--- Requête POST reçue (mise a jour du stock) ---");
                 handlePostRequest(exchange);
             }
         }
@@ -102,7 +101,13 @@ public class StockManagementService {
                 String postData = br.readLine();
 
                 boolean updateSuccessful = updateArticle(postData);
-                String response = updateSuccessful ? "Oui" : "Non";
+
+                String response;
+                if (updateSuccessful) {
+                    response = "Oui";
+                } else {
+                    response = "Non";
+                }
 
                 exchange.sendResponseHeaders(200, response.length());
                 OutputStream os = exchange.getResponseBody();
@@ -116,14 +121,12 @@ public class StockManagementService {
 
 
         private boolean updateArticle(String postData) throws SQLException {
-            // Diviser les paramètres basés sur le caractère '&'
             String[] params = postData.split("&");
 
             int idArticle = 0;
             float prix = 0;
             int stock = 0;
 
-            // Parcourir les paramètres pour extraire les valeurs
             for (String param : params) {
                 String[] keyValue = param.split("=");
                 if (keyValue.length == 2) {

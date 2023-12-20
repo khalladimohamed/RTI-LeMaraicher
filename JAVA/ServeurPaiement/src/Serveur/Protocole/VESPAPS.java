@@ -72,7 +72,7 @@ public class VESPAPS implements Protocole {
                 message = "Utilisateur inexistant";
             }
             else if(requeteLogin.VerifyPassword(motDePasse)) {
-                message = "Login OK";
+                message = "Login reussi !";
                 valide = true;
             }
             else{
@@ -104,6 +104,14 @@ public class VESPAPS implements Protocole {
     }
 
 
+    private synchronized void TraiteRequeteLogout(RequeteLogout requete) throws FinConnexionException
+    {
+        logger.Trace("RequeteLOGOUT reçue de " + requete.getLogin());
+        logger.Trace(requete.getLogin() + " correctement déloggé");
+        throw new FinConnexionException(null);
+    }
+
+
 
     private synchronized Reponse TraiteRequeteGetFactures(RequeteGetFactures requete) {
         logger.Trace("RequeteGETFACTURES reçue de " + requete.getIdClient());
@@ -128,46 +136,6 @@ public class VESPAPS implements Protocole {
 
 
 
-    private synchronized Reponse TraiteRequetePayFacture(RequetePayFacture requete)
-    {
-        try {
-            logger.Trace("RequetePAYFACTURE reçue de " + requete.getNom(cleSession));
-
-            if(!beanMetier.verifyClientName(requete.getNom(cleSession)))
-                return new ReponsePayFacture(false, "Le client n'existe pas !", cleSession);
-
-            if(!LuhnAlgorithm.isValidLuhnNumber(requete.getNumeroCarte(cleSession)))
-                return new ReponsePayFacture(false, "Carte bancaire invalide", cleSession);
-
-            String message = beanMetier.payFacture(requete.getIdFacture(cleSession));
-            if(message.equals("OK"))
-                return new ReponsePayFacture(true, "PAYER", cleSession);
-            else
-                return new ReponsePayFacture(false, "Probleme BD", cleSession);
-        }
-        catch (Exception e)
-        {
-            try {
-                return new ReponsePayFacture(false, "Probleme BD", cleSession);
-            } catch (NoSuchAlgorithmException | NoSuchProviderException | InvalidKeyException | IOException ex) {
-                logger.Trace("Error: TraiteRequetePayFacture "+e);
-            }
-        }
-
-        return null;
-    }
-
-
-
-    private synchronized void TraiteRequeteLogout(RequeteLogout requete) throws FinConnexionException
-    {
-        logger.Trace("RequeteLOGOUT reçue de " + requete.getLogin());
-        logger.Trace(requete.getLogin() + " correctement déloggé");
-        throw new FinConnexionException(null);
-    }
-
-
-
     private synchronized Reponse TraiteRequeteGetArticle(RequeteGetArticles requete)
     {
         logger.Trace("RequeteGETARTICLES reçue de " + requete.getIdFacture());
@@ -185,8 +153,39 @@ public class VESPAPS implements Protocole {
         }
         catch (Exception e)
         {
-            logger.Trace("Server: Error TraiteRequeteGetArticles() "+e);
+            logger.Trace("Serveur : Error TraiteRequeteGetArticles() "+e);
         }
+        return null;
+    }
+
+
+
+    private synchronized Reponse TraiteRequetePayFacture(RequetePayFacture requete)
+    {
+        try {
+            logger.Trace("RequetePAYFACTURE reçue de " + requete.getNom(cleSession));
+
+            if(!beanMetier.verifyClientName(requete.getNom(cleSession)))
+                return new ReponsePayFacture(false, "Le client n'existe pas !", cleSession);
+
+            if(!LuhnAlgorithm.isValidLuhnNumber(requete.getNumeroCarte(cleSession)))
+                return new ReponsePayFacture(false, "Carte bancaire invalide", cleSession);
+
+            String message = beanMetier.payFacture(requete.getIdFacture(cleSession));
+            if(message.equals("OK"))
+                return new ReponsePayFacture(true, "Payement reussi !", cleSession);
+            else
+                return new ReponsePayFacture(false, "Probleme BD", cleSession);
+        }
+        catch (Exception e)
+        {
+            try {
+                return new ReponsePayFacture(false, "Probleme BD", cleSession);
+            } catch (NoSuchAlgorithmException | NoSuchProviderException | InvalidKeyException | IOException ex) {
+                logger.Trace("Error: TraiteRequetePayFacture "+e);
+            }
+        }
+
         return null;
     }
 

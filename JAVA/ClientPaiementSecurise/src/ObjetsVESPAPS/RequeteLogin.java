@@ -40,7 +40,6 @@ public class RequeteLogin implements Requete {
     }
     public boolean VerifyPassword(String password) throws NoSuchAlgorithmException, NoSuchProviderException, IOException {
         // Construction du digest local
-
         Security.addProvider(new BouncyCastleProvider());
 
         MessageDigest md = MessageDigest.getInstance("SHA-1","BC");
@@ -55,7 +54,6 @@ public class RequeteLogin implements Requete {
 
         byte[] digestLocal = md.digest();
 
-        // Comparaison digest reÃ§u et digest local
         return MessageDigest.isEqual(digest,digestLocal);
     }
 
